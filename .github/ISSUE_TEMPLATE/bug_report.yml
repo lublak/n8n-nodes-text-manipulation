@@ -2,7 +2,7 @@ name: Bug Report
 description: Create a report to help us improve
 labels: [bug]
 assignees:
-  - ${{#REPO_OWNER#}}
+  - lublak
 body:
   - type: markdown
     attributes:
@@ -39,7 +39,7 @@ body:
       required: true
   - type: input
     attributes:
-      label: What is your ${{#REPO_NAME#}} version?
+      label: What is your n8n-nodes-text-manipulation version?
       placeholder: 0.189.0
     validations:
       required: true

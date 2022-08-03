@@ -1,19 +1,11 @@
-# n8n-nodes-base
+# n8n-nodes-text-manipulation
 
-This is a basis for community n8n nodes.
+[![version](https://img.shields.io/npm/v/n8n-nodes-text-manipulation.svg)](https://www.npmjs.org/package/n8n-nodes-text-manipulation)
+[![downloads](https://img.shields.io/npm/dt/n8n-nodes-text-manipulation.svg)](https://www.npmjs.org/package/n8n-nodes-text-manipulation)
+[![status](https://github.com/lublak/n8n-nodes-text-manipulation/actions/workflows/node.js.yml/badge.svg)](https://github.com/lublak/n8n-nodes-text-manipulation/actions/workflows/node.js.yml)
 
-## What is the difference between this and the official n8n-nodes-starter
+## Install
 
-This basis is basically only meant for my developed nodes.
-Therefore it is rather unsupported.
-Basically, there are no example nodes here, but for me the corresponding standard template for a complete github repo with workflow and issue templates.
-Of course you are still free to use this as your base.
+n8n-nodes-text-manipulation
 
-## Setup
-
-- https://github.com/lublak/n8n-nodes-base/generate
-- add NPM_AUTH_TOKEN to your github secrets: https://github.com/owner/repo/settings/secrets/actions
-
-## Usage
-
-https://docs.n8n.io/integrations/creating-nodes/build/
+[`Documentation`](https://docs.n8n.io/integrations/community-nodes/installation/)
