@@ -1,0 +1,28 @@
+name: Init the project from template
+
+on: [push]
+
+permissions: write-all
+
+jobs:
+  init-project:
+    if: github.repository != 'lublak/n8n-nodes-base'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref }}
+      - uses: actions/setup-node@v2
+        with:
+          node-version: 16.x
+      - id: init_exists
+        uses: andstor/file-existence-action@v1
+        with:
+          files: init.js
+      - name: run init.js
+        if: steps.init_exists.outputs.files_exists == 'true'
+        run: node init.js && rm -fr init.js && rm -fr .github/workflows/init.yml
+      - uses: EndBug/add-and-commit@v9
+        with:
+          message: "Init repo"

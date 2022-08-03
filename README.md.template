@@ -1,0 +1,11 @@
+# ${{#REPO_NAME#}}
+
+[![version](https://img.shields.io/npm/v/${{#REPO_NAME#}}.svg)](https://www.npmjs.org/package/${{#REPO_NAME#}})
+[![downloads](https://img.shields.io/npm/dt/${{#REPO_NAME#}}.svg)](https://www.npmjs.org/package/${{#REPO_NAME#}})
+[![status](https://github.com/${{#REPO_FULLNAME#}}/actions/workflows/node.js.yml/badge.svg)](https://github.com/${{#REPO_FULLNAME#}}/actions/workflows/node.js.yml)
+
+## Install
+
+${{#REPO_NAME#}}
+
+[`Documentation`](https://docs.n8n.io/integrations/community-nodes/installation/)
