@@ -13,6 +13,7 @@
     "dev": "tsc --watch",
     "format": "prettier nodes credentials --write"
   },
+  "prettier": "eslint-config-n8n-nodes-base/prettierrc",
   "files": [
     "dist"
   ],
@@ -35,6 +36,7 @@
   "homepage": "https://github.com/lublak/n8n-nodes-text-manipulation#readme",
   "devDependencies": {
     "@types/express": "^4.17.13",
+    "@types/lodash": "^4.14.182",
     "@types/node": "^18.6.3",
     "@types/request-promise-native": "^1.0.18",
     "@typescript-eslint/eslint-plugin": "^5.32.0",
@@ -48,9 +50,12 @@
     "n8n-core": "^0.128.0",
     "n8n-workflow": "^0.110.0",
     "prettier": "^2.7.1",
+    "prettier-plugin-jsdoc": "^0.3.38",
     "typescript": "^4.7.4"
   },
   "dependencies": {
-    "entities": "^4.3.1"
+    "entities": "^4.3.1",
+    "iconv-lite": "^0.6.3",
+    "lodash": "^4.17.21"
   }
 }

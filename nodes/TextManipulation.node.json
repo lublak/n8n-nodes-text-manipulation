@@ -1,41 +1,37 @@
 {
-	"node": "n8n-nodes-base.textManipulation",
-	"nodeVersion": "1.0",
-	"codexVersion": "1.0",
-	"categories": [
-		"Core Nodes"
-	],
-	"resources": {
-		"primaryDocumentation": [
-			{
-				"url": "https://docs.n8n.io/nodes/n8n-nodes-base.textManipulation/"
-			}
-		]
-	},
-	"alias": [
-		"Capitalize",
-		"Titlecase",
-		"Camel Case",
-		"Kebab Case",
-		"Snake Case",
-		"Concat",
-		"Decode",
-		"Encode",
-		"Upper Case",
-		"Lower Case",
-		"Locale Upper Case",
-		"Locale Lower Case",
-		"Replace",
-		"Trim",
-		"Pad",
-		"Substring",
-		"Repeat",
-		"Regex",
-		"Entities"
-	],
-	"subcategories": {
-		"Core Nodes": [
-			"Data Transformation"
-		]
-	}
+  "node": "n8n-nodes-base.textManipulation",
+  "nodeVersion": "1.0",
+  "codexVersion": "1.0",
+  "categories": ["Core Nodes"],
+  "resources": {
+    "primaryDocumentation": [
+      {
+        "url": "https://docs.n8n.io/nodes/n8n-nodes-base.textManipulation/"
+      }
+    ]
+  },
+  "alias": [
+    "Capitalize",
+    "Titlecase",
+    "Camel Case",
+    "Kebab Case",
+    "Snake Case",
+    "Concat",
+    "Decode",
+    "Encode",
+    "Upper Case",
+    "Lower Case",
+    "Locale Upper Case",
+    "Locale Lower Case",
+    "Replace",
+    "Trim",
+    "Pad",
+    "Substring",
+    "Repeat",
+    "Regex",
+    "Entities"
+  ],
+  "subcategories": {
+    "Core Nodes": ["Data Transformation"]
+  }
 }

@@ -24,8 +24,7 @@
 	"include": [
 		"credentials/**/*",
 		"nodes/**/*",
-		"nodes/**/*.json",
-		"package.json",
+		"nodes/**/*.json"
 	],
 	"exclude": [
 		"node_modules", 
