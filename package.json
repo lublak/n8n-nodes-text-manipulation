@@ -17,7 +17,7 @@
   },
   "prettier": "eslint-config-n8n-nodes-base/prettierrc",
   "files": [
-    "dist"
+    "dist/**"
   ],
   "n8n": {
     "n8nNodesApiVersion": 1,
