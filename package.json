@@ -31,7 +31,7 @@
   "author": {
     "name": "lublak"
   },
-  "license": "AGPL",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/lublak/n8n-nodes-text-manipulation/issues"
   },
