@@ -25,4 +25,5 @@ jobs:
           node-version: 12
           registry-url: https://registry.npmjs.org/
       - run: npm ci
+      - run: npm tsc
       - run: npm pack
