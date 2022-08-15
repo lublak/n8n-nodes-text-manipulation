@@ -116,7 +116,7 @@ export class TextManipulation implements INodeType {
   description: INodeTypeDescription = {
     displayName: 'TextManipulation',
     name: 'textManipulation',
-    icon: 'fa:i-cursor',
+    icon: 'file:TextManipulation.svg',
     group: ['transform'],
     version: 1,
     description: 'Allows you to manipulate string values.',
