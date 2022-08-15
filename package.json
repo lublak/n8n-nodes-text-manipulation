@@ -1,14 +1,14 @@
 {
   "name": "n8n-nodes-text-manipulation",
   "version": "1.0.0",
-  "description": "This is a basis for community n8n nodes.",
+  "description": "This node allows to modify texts.",
   "keywords": [
     "n8n-community-node-package"
   ],
   "main": "index.js",
   "scripts": {
-    "lint": "eslint nodes credentials package.json",
-    "lint:fix": "eslint nodes credentials package.json --fix",
+    "lint": "eslint nodes credentials package.json --no-error-on-unmatched-pattern",
+    "lint:fix": "eslint nodes credentials package.json --no-error-on-unmatched-pattern --fix",
     "build": "tsc && gulp build:icons",
     "dev": "tsc --watch",
     "format": "prettier nodes credentials --write"
@@ -28,7 +28,9 @@
     "type": "git",
     "url": "git+https://github.com/lublak/n8n-nodes-text-manipulation.git"
   },
-  "author": "lublak",
+  "author": {
+    "name": "lublak"
+  },
   "license": "AGPL",
   "bugs": {
     "url": "https://github.com/lublak/n8n-nodes-text-manipulation/issues"
@@ -41,11 +43,16 @@
     "@types/request-promise-native": "^1.0.18",
     "@typescript-eslint/eslint-plugin": "^5.32.0",
     "@typescript-eslint/parser": "^5.32.0",
-    "eslint": "^8.21.0",
-    "eslint-config-n8n-nodes-base": "^1.0.0",
+    "eslint": "^8.22.0",
+    "eslint-config-n8n-nodes-base": "^1.1.0",
     "eslint-plugin-deprecation": "^1.3.2",
+    "eslint-plugin-eslint-plugin": "^5.0.2",
+    "eslint-plugin-import": "^2.26.0",
     "eslint-plugin-jsdoc": "^39.3.4",
     "eslint-plugin-n8n-nodes-base": "^1.5.5",
+    "eslint-plugin-prettier": "^4.2.1",
+    "eslint-plugin-promise": "^6.0.0",
+    "eslint-plugin-simple-import-sort": "^7.0.0",
     "gulp": "^4.0.2",
     "n8n-core": "^0.128.0",
     "n8n-workflow": "^0.110.0",

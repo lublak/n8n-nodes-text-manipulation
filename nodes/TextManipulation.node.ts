@@ -1,17 +1,5 @@
-import { IExecuteFunctions } from 'n8n-core';
-
-import { BINARY_ENCODING } from 'n8n-core';
-
-import {
-  IBinaryKeyData,
-  IDataObject,
-  INodeExecutionData,
-  INodeParameters,
-  INodePropertyOptions,
-  INodeType,
-  INodeTypeDescription,
-} from 'n8n-workflow';
-
+import * as entities from 'entities';
+import * as iconv from 'iconv-lite';
 import {
   camelCase,
   capitalize,
@@ -25,48 +13,105 @@ import {
   trimEnd,
   trimStart,
 } from 'lodash';
+import { BINARY_ENCODING, IExecuteFunctions } from 'n8n-core';
+import {
+  IBinaryData,
+  IBinaryKeyData,
+  IDataObject,
+  INodeExecutionData,
+  INodeParameters,
+  INodePropertyOptions,
+  INodeType,
+  INodeTypeDescription,
+  NodeOperationError,
+} from 'n8n-workflow';
 
-import * as entities from 'entities';
-
-import * as iconv from 'iconv-lite';
 iconv.encodingExists('utf8');
 
 // Create options for bomAware and encoding
 const bomAware: string[] = [];
 const encodeDecodeOptions: INodePropertyOptions[] = [];
-const encodings = (iconv as any).encodings; // tslint:disable-line:no-any
+const encodings = (
+  iconv as unknown as {
+    encodings: Record<
+      string,
+      | string
+      | {
+          bomAware: boolean;
+        }
+    >;
+  }
+).encodings;
 Object.keys(encodings).forEach((encoding) => {
   if (!(encoding.startsWith('_') || typeof encodings[encoding] === 'string')) {
     // only encodings without direct alias or internals
-    if (encodings[encoding].bomAware) {
+    if (
+      (
+        encodings[encoding] as {
+          bomAware: boolean;
+        }
+      ).bomAware
+    ) {
       bomAware.push(encoding);
     }
     encodeDecodeOptions.push({ name: encoding, value: encoding });
   }
 });
 
+/**
+ * Allows to replace substrings in a string.
+ *
+ * @param   {string} str       - A string in which a part of the string is to be replaced.
+ * @param   {string} substr    - A string that should be replaced.
+ * @param   {string} newSubstr - The new string which replaces the old string.
+ * @returns {string}           - String with replaced substrings.
+ */
 function replaceAll(str: string, substr: string, newSubstr: string) {
   return str.replace(new RegExp(escapeRegExp(substr), 'g'), newSubstr);
 }
 
+/**
+ * Removes leading characters as an unit from string.
+ *
+ * @param   {string} str   - The string to trim.
+ * @param   {string} chars - The characters to trim as a unit.
+ * @returns {string}       — Returns the trimmed string.
+ */
 function charsTrimStart(str: string, chars: string) {
   if (chars === ' ') return str.trimStart();
   chars = escapeRegExp(chars);
   return str.replace(new RegExp('^(' + chars + ')+', 'g'), '');
 }
 
+/**
+ * Removes trailing characters as an unit from string.
+ *
+ * @param   {string} str   - The string to trim.
+ * @param   {string} chars - The characters to trim as a unit.
+ * @returns {string}       — Returns the trimmed string.
+ */
 function charsTrimEnd(str: string, chars: string) {
   if (chars === ' ') return str.trimEnd();
   chars = escapeRegExp(chars);
   return str.replace(new RegExp('(' + chars + ')+$', 'g'), '');
 }
 
+/**
+ * Removes leading and trailing characters as an unit from string.
+ *
+ * @param   {string} str   - The string to trim.
+ * @param   {string} chars - The characters to trim as a unit.
+ * @returns {string}       — Returns the trimmed string.
+ */
 function charsTrim(str: string, chars: string) {
   if (chars === ' ') return str.trim();
   chars = escapeRegExp(chars);
   return str.replace(new RegExp('^(' + chars + ')+|(' + chars + ')+$', 'g'), '');
 }
 
+/**
+ * A node which allows you to manipulate string values.
+ */
 export class TextManipulation implements INodeType {
   description: INodeTypeDescription = {
     displayName: 'TextManipulation',
@@ -88,10 +133,10 @@ export class TextManipulation implements INodeType {
         type: 'boolean',
         default: false,
         description:
-          'If only the values set on this node should be<br />kept and all others removed.',
+          'Whether only the values set on this node should be kept and all others removed',
       },
       {
-        displayName: 'Texts with manipulations',
+        displayName: 'Texts with Manipulations',
         name: 'textsWithManipulations',
         placeholder: 'Add Texts Manipulations',
         type: 'fixedCollection',
@@ -99,12 +144,12 @@ export class TextManipulation implements INodeType {
           multipleValues: true,
           sortable: true,
         },
-        description: 'The texts to manipulate.',
+        description: 'The texts to manipulate',
         default: {},
         options: [
           {
             name: 'textsWithManipulationsValues',
-            displayName: 'Texts with manipulations',
+            displayName: 'Texts with Manipulations',
             values: [
               {
                 name: 'dataSources',
@@ -115,13 +160,85 @@ export class TextManipulation implements INodeType {
                   multipleValues: true,
                   sortable: true,
                 },
-                description: 'The data sources for the manipulations.',
+                description: 'The data sources for the manipulations',
                 default: {},
                 options: [
                   {
                     name: 'dataSource',
                     displayName: 'Data Source',
                     values: [
+                      {
+                        displayName: 'Add BOM',
+                        name: 'fileAddBOM',
+                        type: 'boolean',
+                        default: false,
+                      },
+                      {
+                        displayName: 'Binary Property',
+                        name: 'binaryPropertyName',
+                        required: true,
+                        type: 'string',
+                        default: 'data',
+                        description:
+                          'Name of the binary property from which the binary data is to be read',
+                      },
+                      {
+                        displayName: 'Decode With',
+                        name: 'fileDecodeWith',
+                        type: 'options',
+                        default: '',
+                      },
+                      {
+                        displayName: 'Destination Binary Property',
+                        name: 'destinationBinaryPropertyName',
+                        required: true,
+                        type: 'string',
+                        default: 'data',
+                        description:
+                          'Name of the binary property where the binary data should be written',
+                      },
+                      {
+                        displayName: 'Destination Key',
+                        name: 'destinationKey',
+                        type: 'string',
+                        default: 'data',
+                        required: true,
+                        placeholder: 'data',
+                        description:
+                          "The name the JSON key to copy data to. It is also possible&lt;br	/&gt;to define deep keys by using dot-notation like for example:&lt;br	/&gt;'level1.level2.newKey'.",
+                      },
+                      {
+                        displayName: 'Encode With',
+                        name: 'fileEncodeWith',
+                        type: 'options',
+                        default: '',
+                      },
+                      {
+                        displayName: 'File Name',
+                        name: 'fileName',
+                        type: 'string',
+                        default: '',
+                        placeholder: 'example.txt',
+                        description: 'The file name to set',
+                      },
+                      {
+                        displayName: 'Get Manipulated Data',
+                        name: 'getManipulatedData',
+                        required: true,
+                        type: 'boolean',
+                        default: false,
+                        description:
+                          'Whether to use the newly manipulated data instead of the raw data. If none are available, raw data is used.',
+                      },
+                      {
+                        displayName: 'Mime Type',
+                        name: 'mimeType',
+                        type: 'string',
+                        default: 'text/plain',
+                        placeholder: 'text/plain',
+                        description:
+                          'The mime-type to set. By default will the mime-type for plan text be set.',
+                      },
                       {
                         displayName: 'Read Operation',
                         name: 'readOperation',
@@ -133,110 +250,49 @@ export class TextManipulation implements INodeType {
                             description: 'Declare text directly',
                           },
                           {
-                            name: 'Read from file',
+                            name: 'Read From File',
                             value: 'fromFile',
                             description: 'Read text from file',
                           },
                           {
-                            name: 'Read from JSON',
+                            name: 'Read From JSON',
                             value: 'fromJSON',
-                            description: 'Read text from json',
+                            description: 'Read text from JSON',
                           },
                         ],
                         default: 'fromText',
                       },
                       {
-                        displayName: 'Decode with',
-                        name: 'fileDecodeWith',
-                        displayOptions: {
-                          show: {
-                            readOperation: ['fromFile'],
-                          },
-                        },
-                        type: 'options',
-                        options: encodeDecodeOptions,
-                        default: 'utf8',
-                      },
-                      {
-                        displayName: 'Strip BOM',
-                        name: 'fileStripBOM',
-                        displayOptions: {
-                          show: {
-                            readOperation: ['fromFile'],
-                            fileDecodeWith: bomAware,
-                          },
-                        },
+                        displayName: 'Skip Non-String',
+                        name: 'skipNonString',
+                        required: true,
                         type: 'boolean',
                         default: true,
-                      },
-                      {
-                        displayName: 'Get Manipulated Data',
-                        name: 'getManipulatedData',
-                        required: true,
-                        displayOptions: {
-                          show: {
-                            readOperation: ['fromFile', 'fromJSON'],
-                          },
-                        },
-                        type: 'boolean',
-                        default: false,
                         description:
-                          'Fetches the new manipulated data instead of the raw data. If none are available, the raw data are taken.',
-                      },
-                      {
-                        displayName: 'Binary Property',
-                        name: 'binaryPropertyName',
-                        required: true,
-                        displayOptions: {
-                          show: {
-                            readOperation: ['fromFile'],
-                          },
-                        },
-                        type: 'string',
-                        default: 'data',
-                        description:
-                          'Name of the binary property from which the binary data is to be read.',
+                          'Whether to skip non-string data. If they are not skipped, they are automatically converted to a string.',
                       },
                       {
                         displayName: 'Source Key',
                         name: 'sourceKey',
                         required: true,
-                        displayOptions: {
-                          show: {
-                            readOperation: ['fromJSON'],
-                          },
-                        },
                         type: 'string',
                         default: 'data',
                         description:
-                          'The name of the JSON key to get data from.<br />It is also possible to define deep keys by using dot-notation like for example:<br />"level1.level2.currentKey"',
+                          "The name of the JSON key to get data from.&lt;br	/&gt;It is also possible to define deep keys by using dot-notation like for example:&lt;br	/&gt;'level1.level2.currentKey'",
                       },
                       {
-                        displayName: 'Skip Non-String',
-                        name: 'skipNonString',
-                        required: true,
-                        displayOptions: {
-                          show: {
-                            readOperation: ['fromJSON'],
-                          },
-                        },
+                        displayName: 'Strip BOM',
+                        name: 'fileStripBOM',
                         type: 'boolean',
                         default: true,
-                        description:
-                          'Non-string data will be skipped. If not, they will be converted automatically.',
                       },
                       {
                         displayName: 'Text',
                         name: 'text',
                         required: true,
-                        displayOptions: {
-                          show: {
-                            readOperation: ['fromText'],
-                          },
-                        },
                         type: 'string',
                         default: '',
-                        description: 'Plain text.',
+                        description: 'Plain text',
                       },
                       {
                         displayName: 'Write Operation',
@@ -244,97 +300,17 @@ export class TextManipulation implements INodeType {
                         type: 'options',
                         options: [
                           {
-                            name: 'Write to file',
+                            name: 'Write to File',
                             value: 'toFile',
-                            description: 'Write the manipulated text to a file.',
+                            description: 'Write the manipulated text to a file',
                           },
                           {
                             name: 'Write to JSON',
                             value: 'toJSON',
-                            description: 'Write the manipulated text to a json key.',
+                            description: 'Write the manipulated text to a JSON key',
                           },
                         ],
                         default: 'toJSON',
-                      },
-                      {
-                        displayName: 'Encode with',
-                        name: 'fileEncodeWith',
-                        displayOptions: {
-                          show: {
-                            writeOperation: ['toFile'],
-                          },
-                        },
-                        type: 'options',
-                        options: encodeDecodeOptions,
-                        default: 'utf8',
-                      },
-                      {
-                        displayName: 'Add BOM',
-                        name: 'fileAddBOM',
-                        displayOptions: {
-                          show: {
-                            writeOperation: ['toFile'],
-                            fileEncodeWith: bomAware,
-                          },
-                        },
-                        type: 'boolean',
-                        default: false,
-                      },
-                      {
-                        displayName: 'Destination Binary Property',
-                        name: 'destinationBinaryPropertyName',
-                        required: true,
-                        displayOptions: {
-                          show: {
-                            writeOperation: ['toFile'],
-                          },
-                        },
-                        type: 'string',
-                        default: 'data',
-                        description:
-                          'Name of the binary property where the binary data should be written.',
-                      },
-                      {
-                        displayName: 'File Name',
-                        name: 'fileName',
-                        type: 'string',
-                        displayOptions: {
-                          show: {
-                            writeOperation: ['toFile'],
-                          },
-                        },
-                        default: '',
-                        placeholder: 'example.txt',
-                        description: 'The file name to set.',
-                      },
-                      {
-                        displayName: 'Mime Type',
-                        name: 'mimeType',
-                        type: 'string',
-                        displayOptions: {
-                          show: {
-                            writeOperation: ['toFile'],
-                          },
-                        },
-                        default: 'text/plain',
-                        placeholder: 'text/plain',
-                        description:
-                          'The mime-type to set. By default will the mime-type for plan text be set.',
-                      },
-                      {
-                        displayName: 'Destination Key',
-                        name: 'destinationKey',
-                        displayOptions: {
-                          show: {
-                            writeOperation: ['toJSON'],
-                          },
-                        },
-                        type: 'string',
-                        default: 'data',
-                        required: true,
-                        placeholder: 'data',
-                        description:
-                          'The name the JSON key to copy data to. It is also possible<br />to define deep keys by using dot-notation like for example:<br />"level1.level2.newKey"',
                       },
                     ],
                   },
@@ -349,7 +325,7 @@ export class TextManipulation implements INodeType {
                   multipleValues: true,
                   sortable: true,
                 },
-                description: 'The manipulations for the data sources.',
+                description: 'The manipulations for the data sources',
                 default: {},
                 options: [
                   {
@@ -364,202 +340,141 @@ export class TextManipulation implements INodeType {
                           {
                             name: 'Concat',
                             value: 'concat',
-                            description: 'Add string to the beginning or/and end.',
+                            description: 'Add string to the beginning or/and end',
+                            action: 'Add string to the beginning or and end',
                           },
                           {
                             name: 'Decode/Encode',
                             value: 'decodeEncode',
-                            description: 'Decode and Encode string.',
+                            description: 'Decode and Encode string',
+                            action: 'Decode and encode string',
                           },
                           {
                             name: 'Decode/Encode Entities',
                             value: 'decodeEncodeEntities',
-                            description: 'Decode and Encode HTML & XML entities.',
+                            description: 'Decode and Encode HTML	&	XML entities',
+                            action: 'Decode and encode html xml entities',
                           },
                           {
                             name: 'Letter Case',
                             value: 'letterCase',
-                            description: 'Upper and lowercase letters in a string.',
-                          },
-                          {
-                            name: 'Replace',
-                            value: 'replace',
-                            description: 'Replace a substring or regex.',
-                          },
-                          {
-                            name: 'Trim',
-                            value: 'trim',
-                            description: 'Removes characters from the beginning or/and end.',
+                            description: 'Upper and lowercase letters in a string',
+                            action: 'Upper and lowercase letters in a string',
                           },
                           {
                             name: 'Pad',
                             value: 'pad',
-                            description: 'Pad the string at the beginning or end.',
-                          },
-                          {
-                            name: 'Substring',
-                            value: 'substring',
-                            description: 'Get a substring.',
+                            description: 'Pad the string at the beginning or end',
+                            action: 'Pad the string at the beginning or end',
                           },
                           {
                             name: 'Repeat',
                             value: 'repeat',
-                            description: 'Repeat the string.',
+                            description: 'Repeat the string',
+                            action: 'Repeat the string',
+                          },
+                          {
+                            name: 'Replace',
+                            value: 'replace',
+                            description: 'Replace a substring or regex',
+                            action: 'Replace a substring or regex',
+                          },
+                          {
+                            name: 'Substring',
+                            value: 'substring',
+                            description: 'Get a substring',
+                            action: 'Get a substring',
+                          },
+                          {
+                            name: 'Trim',
+                            value: 'trim',
+                            description: 'Removes characters from the beginning or/and end',
+                            action: 'Removes characters from the beginning or and end',
                           },
                         ],
                         default: 'letterCase',
                       },
                       {
+                        displayName: 'Add BOM',
+                        name: 'addBOM',
+                        type: 'boolean',
+                        default: false,
+                      },
+                      {
+                        displayName: 'After',
+                        name: 'after',
+                        type: 'string',
+                        default: '',
+                        description: 'String to be added at the end',
+                      },
+                      {
+                        displayName: 'Before',
+                        name: 'before',
+                        type: 'string',
+                        default: '',
+                        description: 'String to be added at the beginning',
+                      },
+                      {
                         displayName: 'Case Type',
                         name: 'caseType',
-                        displayOptions: {
-                          show: {
-                            action: ['letterCase'],
-                          },
-                        },
                         type: 'options',
                         options: [
                           {
-                            name: 'Upper Case',
-                            value: 'upperCase',
-                            description: 'Upper case all characters.',
-                          },
-                          {
-                            name: 'Lower Case',
-                            value: 'lowerCase',
-                            description: 'Lower case all characters.',
-                          },
-                          {
-                            name: 'Locale Upper Case',
-                            value: 'localeUpperCase',
-                            description: 'Locale upper case all characters.',
-                          },
-                          {
-                            name: 'Locale Lower Case',
-                            value: 'localeLowerCase',
-                            description: 'Locale lower case all characters.',
+                            name: 'Camel Case',
+                            value: 'camelCase',
+                            description: 'Converts string to camel case',
                           },
                           {
                             name: 'Capitalize',
                             value: 'capitalize',
-                            description: 'Capitalize text.',
-                          },
-                          {
-                            name: 'Titlecase',
-                            value: 'titlecase',
-                            description: 'Titlecase text.',
-                          },
-                          {
-                            name: 'Camel Case',
-                            value: 'camelCase',
-                            description: 'Converts string to camel case.',
+                            description: 'Capitalize text',
                           },
                           {
                             name: 'Kebab Case',
                             value: 'kebabCase',
-                            description: 'Converts string to kebab case.',
+                            description: 'Converts string to kebab case',
+                          },
+                          {
+                            name: 'Locale Lower Case',
+                            value: 'localeLowerCase',
+                            description: 'Locale lower case all characters',
+                          },
+                          {
+                            name: 'Locale Upper Case',
+                            value: 'localeUpperCase',
+                            description: 'Locale upper case all characters',
+                          },
+                          {
+                            name: 'Lower Case',
+                            value: 'lowerCase',
+                            description: 'Lower case all characters',
                           },
                           {
                             name: 'Snake Case',
                             value: 'snakeCase',
-                            description: 'Converts string to snake case.',
+                            description: 'Converts string to snake case',
                           },
                           {
                             name: 'Start Case',
                             value: 'startCase',
-                            description: 'Converts string to start case.',
+                            description: 'Converts string to start case',
+                          },
+                          {
+                            name: 'Titlecase',
+                            value: 'titlecase',
+                            description: 'Titlecase text',
+                          },
+                          {
+                            name: 'Upper Case',
+                            value: 'upperCase',
+                            description: 'Upper case all characters',
                           },
                         ],
                         default: 'lowerCase',
                       },
                       {
-                        displayName: 'Language',
-                        name: 'language',
-                        displayOptions: {
-                          show: {
-                            action: ['letterCase'],
-                            caseType: ['localeLowerCase', 'localeUpperCase'],
-                          },
-                        },
-                        type: 'string',
-                        default: 'en',
-                        required: true,
-                        description: 'Change the language of the localbase method.',
-                      },
-                      {
-                        displayName: 'Before',
-                        name: 'before',
-                        displayOptions: {
-                          show: {
-                            action: ['concat'],
-                          },
-                        },
-                        type: 'string',
-                        default: '',
-                        description: 'String to be added at the beginning.',
-                      },
-                      {
-                        displayName: 'After',
-                        name: 'after',
-                        displayOptions: {
-                          show: {
-                            action: ['concat'],
-                          },
-                        },
-                        type: 'string',
-                        default: '',
-                        description: 'String to be added at the end.',
-                      },
-                      {
-                        displayName: 'Decode with',
-                        name: 'decodeWith',
-                        displayOptions: {
-                          show: {
-                            action: ['decodeEncode'],
-                          },
-                        },
-                        type: 'options',
-                        options: encodeDecodeOptions,
-                        default: 'utf8',
-                      },
-                      {
-                        displayName: 'Decode with',
-                        name: 'decodeWithEntities',
-                        displayOptions: {
-                          show: {
-                            action: ['decodeEncodeEntities'],
-                          },
-                        },
-                        type: 'options',
-                        options: [
-                          {
-                            name: 'nothing',
-                            value: 'nothing',
-                          },
-                          {
-                            name: 'url',
-                            value: 'url',
-                          },
-                          {
-                            name: 'xml',
-                            value: 'xml',
-                          },
-                          {
-                            name: 'html',
-                            value: 'html',
-                          },
-                        ],
-                        default: 'nothing',
-                      },
-                      {
                         displayName: 'Decode Mode',
                         name: 'entitiesDecodeMode',
-                        displayOptions: {
-                          show: {
-                            action: ['decodeEncodeEntities'],
-                            decodeWithEntities: ['xml', 'html'],
-                          },
-                        },
                         type: 'options',
                         options: [
                           {
@@ -574,53 +489,30 @@ export class TextManipulation implements INodeType {
                         default: 'legacy',
                       },
                       {
-                        displayName: 'Strip BOM',
-                        name: 'stripBOM',
-                        displayOptions: {
-                          show: {
-                            action: ['decodeEncode'],
-                            decodeWith: bomAware,
-                          },
-                        },
-                        type: 'boolean',
-                        default: true,
-                      },
-                      {
-                        displayName: 'Encode with',
-                        name: 'encodeWith',
-                        displayOptions: {
-                          show: {
-                            action: ['decodeEncode'],
-                          },
-                        },
+                        displayName: 'Decode With',
+                        name: 'decodeWith',
                         type: 'options',
-                        options: encodeDecodeOptions,
-                        default: 'utf8',
+                        default: '',
                       },
                       {
-                        displayName: 'Encode with',
-                        name: 'encodeWithEntities',
-                        displayOptions: {
-                          show: {
-                            action: ['decodeEncodeEntities'],
-                          },
-                        },
+                        displayName: 'Decode With',
+                        name: 'decodeWithEntities',
                         type: 'options',
                         options: [
                           {
-                            name: 'nothing',
+                            name: 'Nothing',
                             value: 'nothing',
                           },
                           {
-                            name: 'url',
+                            name: 'Url',
                             value: 'url',
                           },
                           {
-                            name: 'xml',
+                            name: 'Xml',
                             value: 'xml',
                           },
                           {
-                            name: 'html',
+                            name: 'Html',
                             value: 'html',
                           },
                         ],
@@ -629,12 +521,6 @@ export class TextManipulation implements INodeType {
                       {
                         displayName: 'Encode Mode',
                         name: 'entitiesEncodeMode',
-                        displayOptions: {
-                          show: {
-                            action: ['decodeEncodeEntities'],
-                            encodeWithEntities: ['xml', 'html'],
-                          },
-                        },
                         type: 'options',
                         options: [
                           {
@@ -653,249 +539,44 @@ export class TextManipulation implements INodeType {
                         default: 'extensive',
                       },
                       {
-                        displayName: 'Add BOM',
-                        name: 'addBOM',
-                        displayOptions: {
-                          show: {
-                            action: ['decodeEncode'],
-                            encodeWith: bomAware,
-                          },
-                        },
-                        type: 'boolean',
-                        default: false,
+                        displayName: 'Encode With',
+                        name: 'encodeWith',
+                        type: 'options',
+                        default: '',
                       },
                       {
-                        displayName: 'Replace Mode',
-                        name: 'replaceMode',
-                        displayOptions: {
-                          show: {
-                            action: ['replace'],
-                          },
-                        },
+                        displayName: 'Encode With',
+                        name: 'encodeWithEntities',
                         type: 'options',
                         options: [
                           {
-                            name: 'Substring',
-                            value: 'substring',
-                            description: 'Replace a substring with a value.',
+                            name: 'Nothing',
+                            value: 'nothing',
                           },
                           {
-                            name: 'Regex',
-                            value: 'regex',
-                            description: 'Replace regex with a pattern.',
+                            name: 'Url',
+                            value: 'url',
+                          },
+                          {
+                            name: 'Xml',
+                            value: 'xml',
+                          },
+                          {
+                            name: 'Html',
+                            value: 'html',
                           },
                         ],
-                        default: 'substring',
-                      },
-                      {
-                        displayName: 'Regex',
-                        name: 'regex',
-                        displayOptions: {
-                          show: {
-                            action: ['replace'],
-                            replaceMode: ['regex'],
-                          },
-                        },
-                        type: 'string',
-                        default: '',
-                        required: true,
-                        placeholder: '.*',
-                        description: 'Regular expression.',
-                      },
-                      {
-                        displayName: 'Pattern',
-                        name: 'pattern',
-                        displayOptions: {
-                          show: {
-                            action: ['replace'],
-                            replaceMode: ['regex'],
-                          },
-                        },
-                        type: 'string',
-                        default: '',
-                        placeholder: '$&',
-                        description:
-                          '<table><tr><th>Pattern</th><th>Inserts</th></tr><tr><td>$$</td><td>Inserts a "$".</td></tr><tr><td>$&</td><td>Inserts the matched substring.</td></tr><tr><td>$`</td><td>Inserts the portion of the string that precedes the matched substring.</td></tr><tr><td>$\'</td><td>Inserts the portion of the string that follows the matched substring.</td></tr><tr><td>$n</td><td>Where n is a positive integer less than 100, inserts the nth parenthesized submatch string, provided the first argument was a RegExp object. Note that this is 1-indexed. If a group n is not present (e.g., if group is 3), it will be replaced as a literal (e.g., $3).</td></tr><tr><td>$&lt;Name&gt;</td><td>Where Name is a capturing group name. If the group is not in the match, or not in the regular expression, or if a string was passed as the first argument to replace instead of a regular expression, this resolves to a literal (e.g., $&lt;Name&gt;).</td></tr></table>',
-                      },
-                      {
-                        displayName: 'Substring',
-                        name: 'substring',
-                        displayOptions: {
-                          show: {
-                            action: ['replace'],
-                            replaceMode: ['substring'],
-                          },
-                        },
-                        type: 'string',
-                        default: '',
-                        required: true,
-                        placeholder: '.*',
-                        description: 'The substring to be replaced.',
-                      },
-                      {
-                        displayName: 'Value',
-                        name: 'value',
-                        displayOptions: {
-                          show: {
-                            action: ['replace'],
-                            replaceMode: ['substring'],
-                          },
-                        },
-                        type: 'string',
-                        default: '',
-                        placeholder: '',
-                        description: 'The value that should replace the substring.',
-                      },
-                      {
-                        displayName: 'Replace All',
-                        name: 'replaceAll',
-                        displayOptions: {
-                          show: {
-                            action: ['replace'],
-                            replaceMode: ['substring'],
-                          },
-                        },
-                        type: 'boolean',
-                        default: true,
-                        placeholder: '',
-                        description: 'Replace all substrings (not only the first).',
-                      },
-                      {
-                        displayName: 'Trim',
-                        name: 'trim',
-                        displayOptions: {
-                          show: {
-                            action: ['trim'],
-                          },
-                        },
-                        type: 'options',
-                        options: [
-                          {
-                            name: 'Trim Both',
-                            value: 'trimBoth',
-                            description: 'Removes characters from the beginning and end.',
-                          },
-                          {
-                            name: 'Trim Start',
-                            value: 'trimStart',
-                            description: 'Removes characters from the beginning.',
-                          },
-                          {
-                            name: 'Trim End',
-                            value: 'trimEnd',
-                            description: 'Removes characters from the end.',
-                          },
-                        ],
-                        default: 'trimBoth',
-                      },
-                      {
-                        displayName: 'Trim String',
-                        name: 'trimString',
-                        displayOptions: {
-                          show: {
-                            action: ['trim'],
-                          },
-                        },
-                        type: 'string',
-                        default: ' ',
-                        required: true,
-                        description: 'The string to trim.',
-                      },
-                      {
-                        displayName: 'Trim String as an unit',
-                        name: 'trimStringUnit',
-                        displayOptions: {
-                          show: {
-                            action: ['trim'],
-                          },
-                        },
-                        type: 'boolean',
-                        default: true,
-                        required: true,
-                        description:
-                          'Trimming is done with the complete trim string as an unit and not each character individually.',
-                      },
-                      {
-                        displayName: 'Pad',
-                        name: 'pad',
-                        displayOptions: {
-                          show: {
-                            action: ['pad'],
-                          },
-                        },
-                        type: 'options',
-                        options: [
-                          {
-                            name: 'Pad Start',
-                            value: 'padStart',
-                            description: 'Pad the string at the beginning.',
-                          },
-                          {
-                            name: 'Pad End',
-                            value: 'padEnd',
-                            description: 'Pad the string at the end.',
-                          },
-                        ],
-                        default: 'padStart',
-                      },
-                      {
-                        displayName: 'Target Length',
-                        name: 'targetLength',
-                        displayOptions: {
-                          show: {
-                            action: ['pad'],
-                          },
-                        },
-                        type: 'number',
-                        typeOptions: {
-                          minValue: 0,
-                        },
-                        default: 1,
-                        required: true,
-                        placeholder: '1',
-                        description: 'The length to which the string should be padded.',
-                      },
-                      {
-                        displayName: 'Pad String',
-                        name: 'padString',
-                        displayOptions: {
-                          show: {
-                            action: ['pad'],
-                          },
-                        },
-                        type: 'string',
-                        default: ' ',
-                        required: true,
-                        description: 'The filling string.',
-                      },
-                      {
-                        displayName: 'Start Position',
-                        name: 'startPosition',
-                        displayOptions: {
-                          show: {
-                            action: ['substring'],
-                          },
-                        },
-                        type: 'number',
-                        default: 0,
-                        placeholder: '0',
-                        description:
-                          'The start position (string begins with 0). Can also be negativ.',
+                        default: 'nothing',
                       },
                       {
                         displayName: 'End',
                         name: 'end',
-                        displayOptions: {
-                          show: {
-                            action: ['substring'],
-                          },
-                        },
                         type: 'options',
                         options: [
                           {
                             name: 'Complete',
                             value: 'complete',
-                            description: 'Selects everything to the end.',
+                            description: 'Selects everything to the end',
                           },
                           {
                             name: 'Position',
@@ -906,59 +587,196 @@ export class TextManipulation implements INodeType {
                           {
                             name: 'Length',
                             value: 'length',
-                            description: 'The length of the selected rows.',
+                            description: 'The length of the selected rows',
                           },
                         ],
                         default: 'complete',
-                        description: 'The end of the substring.',
+                        description: 'The end of the substring',
+                      },
+                      {
+                        displayName: 'Language',
+                        name: 'language',
+                        type: 'string',
+                        default: 'en',
+                        required: true,
+                        description: 'Change the language of the localbase method',
+                      },
+                      {
+                        displayName: 'Length',
+                        name: 'endLength',
+                        type: 'number',
+                        default: 1,
+                        placeholder: '1',
+                        description: 'The length of the substring',
+                      },
+                      {
+                        displayName: 'Pad',
+                        name: 'pad',
+                        type: 'options',
+                        options: [
+                          {
+                            name: 'Pad Start',
+                            value: 'padStart',
+                            description: 'Pad the string at the beginning',
+                          },
+                          {
+                            name: 'Pad End',
+                            value: 'padEnd',
+                            description: 'Pad the string at the end',
+                          },
+                        ],
+                        default: 'padStart',
+                      },
+                      {
+                        displayName: 'Pad String',
+                        name: 'padString',
+                        type: 'string',
+                        default: ' ',
+                        required: true,
+                        description: 'The filling string',
+                      },
+                      {
+                        displayName: 'Pattern',
+                        name: 'pattern',
+                        type: 'string',
+                        default: '',
+                        placeholder: '$&',
+                        description:
+                          '&lt;table&gt;&lt;tr&gt;&lt;th&gt;Pattern&lt;/th&gt;&lt;th&gt;Inserts&lt;/th&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;$$&lt;/td&gt;&lt;td&gt;Inserts a "$".&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;$&&lt;/td&gt;&lt;td&gt;Inserts the matched substring.&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;$`&lt;/td&gt;&lt;td&gt;Inserts the portion of the string that precedes the matched substring.&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;$\'&lt;/td&gt;&lt;td&gt;Inserts the portion of the string that follows the matched substring.&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;$n&lt;/td&gt;&lt;td&gt;Where n is a positive integer less than 100, inserts the nth parenthesized submatch string, provided the first argument was a RegExp object. Note that this is 1-indexed. If a group n is not present (e.g., if group is 3), it will be replaced as a literal (e.g., $3).&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;$&lt;Name&gt;&lt;/td&gt;&lt;td&gt;Where Name is a capturing group name. If the group is not in the match, or not in the regular expression, or if a string was passed as the first argument to replace instead of a regular expression, this resolves to a literal (e.g., $&lt;Name&gt;).&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;',
                       },
                       {
                         displayName: 'Position',
                         name: 'endPosition',
-                        displayOptions: {
-                          show: {
-                            action: ['substring'],
-                            end: ['position'],
-                          },
-                        },
                         type: 'number',
                         default: 1,
                         placeholder: '1',
                         description: 'The end position of the substring. Can also be negative.',
                       },
                       {
-                        displayName: 'Length',
-                        name: 'endLength',
-                        displayOptions: {
-                          show: {
-                            action: ['substring'],
-                            end: ['length'],
+                        displayName: 'Regex',
+                        name: 'regex',
+                        type: 'string',
+                        default: '',
+                        required: true,
+                        placeholder: '.*',
+                        description: 'Regular expression',
+                      },
+                      {
+                        displayName: 'Replace All',
+                        name: 'replaceAll',
+                        type: 'boolean',
+                        default: true,
+                        placeholder: '',
+                        description:
+                          'Whether all substrings should be replaced (not only the first)',
+                      },
+                      {
+                        displayName: 'Replace Mode',
+                        name: 'replaceMode',
+                        type: 'options',
+                        options: [
+                          {
+                            name: 'Substring',
+                            value: 'substring',
+                            description: 'Replace a substring with a value',
                           },
-                        },
-                        typeOptions: {
-                          minValue: 0,
-                        },
+                          {
+                            name: 'Regex',
+                            value: 'regex',
+                            description: 'Replace regex with a pattern',
+                          },
+                        ],
+                        default: 'substring',
+                      },
+                      {
+                        displayName: 'Start Position',
+                        name: 'startPosition',
+                        type: 'number',
+                        default: 0,
+                        placeholder: '0',
+                        description:
+                          'The start position (string begins with 0). Can also be negativ.',
+                      },
+                      {
+                        displayName: 'Strip BOM',
+                        name: 'stripBOM',
+                        type: 'boolean',
+                        default: true,
+                      },
+                      {
+                        displayName: 'Substring',
+                        name: 'substring',
+                        type: 'string',
+                        default: '',
+                        required: true,
+                        placeholder: '.*',
+                        description: 'The substring to be replaced',
+                      },
+                      {
+                        displayName: 'Target Length',
+                        name: 'targetLength',
                         type: 'number',
                         default: 1,
+                        required: true,
                         placeholder: '1',
-                        description: 'The length of the substring.',
+                        description: 'The length to which the string should be padded',
                       },
                       {
                         displayName: 'Times',
                         name: 'times',
-                        displayOptions: {
-                          show: {
-                            action: ['repeat'],
-                          },
-                        },
                         type: 'number',
-                        typeOptions: {
-                          minValue: 0,
-                        },
                         default: 1,
                         required: true,
                         placeholder: '1',
-                        description: 'The number of times the string should be repeated.',
+                        description: 'The number of times the string should be repeated',
+                      },
+                      {
+                        displayName: 'Trim',
+                        name: 'trim',
+                        type: 'options',
+                        options: [
+                          {
+                            name: 'Trim Both',
+                            value: 'trimBoth',
+                            description: 'Removes characters from the beginning and end',
+                          },
+                          {
+                            name: 'Trim Start',
+                            value: 'trimStart',
+                            description: 'Removes characters from the beginning',
+                          },
+                          {
+                            name: 'Trim End',
+                            value: 'trimEnd',
+                            description: 'Removes characters from the end',
+                          },
+                        ],
+                        default: 'trimBoth',
+                      },
+                      {
+                        displayName: 'Trim String',
+                        name: 'trimString',
+                        type: 'string',
+                        default: ' ',
+                        required: true,
+                        description: 'The string to trim',
+                      },
+                      {
+                        displayName: 'Trim String as an Unit',
+                        name: 'trimStringUnit',
+                        type: 'boolean',
+                        default: true,
+                        required: true,
+                        description:
+                          'Whether to use the trim chain as a whole unit and not each individual character in that chain',
+                      },
+                      {
+                        displayName: 'Value',
+                        name: 'value',
+                        type: 'string',
+                        default: '',
+                        placeholder: '',
+                        description: 'The value that should replace the substring',
                       },
                     ],
                   },
@@ -986,28 +804,34 @@ export class TextManipulation implements INodeType {
       let newItemJson: IDataObject = {};
       const newItemBinary: IBinaryKeyData = {};
 
-      if (keepOnlySet !== true) {
+      if (!keepOnlySet) {
         if (item.binary !== undefined) {
           Object.assign(newItemBinary, item.binary);
         }
 
-        newItemJson = JSON.parse(JSON.stringify(item.json));
+        newItemJson = JSON.parse(JSON.stringify(item.json)) as IDataObject;
       }
 
       for (const textsWithManipulationsValues of (this.getNodeParameter(
         'textsWithManipulations.textsWithManipulationsValues',
         itemIndex,
         [],
-      ) as INodeParameters[]) || []) {
+      ) as INodeParameters[] | null) ?? []) {
         for (const dataSource of ((textsWithManipulationsValues.dataSources as INodeParameters)
-          .dataSource as INodeParameters[]) || []) {
+          .dataSource as INodeParameters[] | null) ?? []) {
           switch (dataSource.readOperation) {
             case 'fromFile':
               if (dataSource.getManipulatedData) {
-                if (newItemBinary[dataSource.binaryPropertyName as string] === undefined) {
+                if (
+                  (newItemBinary[dataSource.binaryPropertyName as string] as
+                    | IBinaryData
+                    | undefined) === undefined
+                ) {
                   if (
                     item.binary === undefined ||
-                    item.binary[dataSource.binaryPropertyName as string] === undefined
+                    (item.binary[dataSource.binaryPropertyName as string] as
+                      | IBinaryData
+                      | undefined) === undefined
                   ) {
                     continue;
                   }
@@ -1031,7 +855,9 @@ export class TextManipulation implements INodeType {
                 }
               } else if (
                 item.binary === undefined ||
-                item.binary[dataSource.binaryPropertyName as string] === undefined
+                (item.binary[dataSource.binaryPropertyName as string] as
+                  | IBinaryData
+                  | undefined) === undefined
               ) {
                 continue;
               } else {
@@ -1045,32 +871,40 @@ export class TextManipulation implements INodeType {
                 );
               }
               break;
-            case 'fromJSON':
+            case 'fromJSON': {
               const value =
                 (dataSource.getManipulatedData &&
                   get(newItemJson, dataSource.sourceKey as string)) ||
                 get(item.json, dataSource.sourceKey as string);
               if (typeof value === 'string') {
-                text = value as string;
+                text = value;
               } else if (dataSource.skipNonString) {
                 continue;
               } else {
-                text = (value || '').toString();
+                text = ((value as string | null) ?? '').toString();
               }
               break;
+            }
             case 'fromText':
               text = dataSource.text as string;
               break;
             default:
-              throw new Error('fromFile, fromJSON or fromText are valid options');
+              throw new NodeOperationError(
+                this.getNode(),
+                'fromFile, fromJSON or fromText are valid options',
+                { itemIndex },
+              );
           }
 
           for (const manipulation of ((
             textsWithManipulationsValues.manipulations as INodeParameters
-          ).manipulation as INodeParameters[]) || []) {
+          ).manipulation as INodeParameters[] | null) ?? []) {
             switch (manipulation.action) {
               case 'concat':
-                text = (manipulation.before || '') + text + (manipulation.after || '');
+                text =
+                  ((manipulation.before as string | null) ?? '') +
+                  text +
+                  ((manipulation.after as string | null) ?? '');
                 break;
               case 'decodeEncode':
                 if (manipulation.encodeWith !== manipulation.decodeWith) {
@@ -1100,7 +934,11 @@ export class TextManipulation implements INodeType {
                           text = entities.decodeXMLStrict(text);
                           break;
                         default:
-                          throw new Error('legacy or strict are valid options');
+                          throw new NodeOperationError(
+                            this.getNode(),
+                            'legacy or strict are valid options',
+                            { itemIndex },
+                          );
                       }
                       break;
                     case 'html':
@@ -1112,13 +950,21 @@ export class TextManipulation implements INodeType {
                           text = entities.decodeHTMLStrict(text);
                           break;
                         default:
-                          throw new Error('legacy or strict are valid options');
+                          throw new NodeOperationError(
+                            this.getNode(),
+                            'legacy or strict are valid options',
+                            { itemIndex },
+                          );
                       }
                       break;
                     case 'nothing':
                       break;
                     default:
-                      throw new Error('url, xml, html or nothing are valid options');
+                      throw new NodeOperationError(
+                        this.getNode(),
+                        'url, xml, html or nothing are valid options',
+                        { itemIndex },
+                      );
                   }
 
                   switch (manipulation.encodeWithEntities) {
@@ -1137,7 +983,11 @@ export class TextManipulation implements INodeType {
                           text = entities.encodeXML(text);
                           break;
                         default:
-                          throw new Error('extensive, utf8 or nonAscii are valid options');
+                          throw new NodeOperationError(
+                            this.getNode(),
+                            'extensive, utf8 or nonAscii are valid options',
+                            { itemIndex },
+                          );
                       }
                       break;
                     case 'html':
@@ -1152,13 +1002,21 @@ export class TextManipulation implements INodeType {
                           text = entities.encodeNonAsciiHTML(text);
                           break;
                         default:
-                          throw new Error('extensive, utf8 or nonAscii are valid options');
+                          throw new NodeOperationError(
+                            this.getNode(),
+                            'extensive, utf8 or nonAscii are valid options',
+                            { itemIndex },
+                          );
                       }
                       break;
                     case 'nothing':
                       break;
                     default:
-                      throw new Error('url, xml, html or nothing are valid options');
+                      throw new NodeOperationError(
+                        this.getNode(),
+                        'url, xml, html or nothing are valid options',
+                        { itemIndex },
+                      );
                   }
                 }
                 break;
@@ -1195,8 +1053,10 @@ export class TextManipulation implements INodeType {
                     text = text.toLocaleLowerCase(manipulation.language as string);
                     break;
                   default:
-                    throw new Error(
+                    throw new NodeOperationError(
+                      this.getNode(),
                       'upperCase, lowerCase, capitalize, camelCase, kebabCase or snakeCase are valid options',
+                      { itemIndex },
                     );
                 }
                 break;
@@ -1216,7 +1076,7 @@ export class TextManipulation implements INodeType {
                       );
                     }
                     break;
-                  case 'regex':
+                  case 'regex': {
                     const regexMatch = (manipulation.regex as string).match(
                       new RegExp('^/(.*?)/([gimusy]*)$'),
                     );
@@ -1238,8 +1098,13 @@ export class TextManipulation implements INodeType {
                       );
                     }
                     break;
+                  }
                   default:
-                    throw new Error('substring or regex are valid options');
+                    throw new NodeOperationError(
+                      this.getNode(),
+                      'substring or regex are valid options',
+                      { itemIndex },
+                    );
                 }
                 break;
               case 'trim':
@@ -1260,12 +1125,20 @@ export class TextManipulation implements INodeType {
                       : trimEnd(text, manipulation.trimString as string);
                     break;
                   default:
-                    throw new Error('trimBoth, trimStart or trimEnd are valid options');
+                    throw new NodeOperationError(
+                      this.getNode(),
+                      'trimBoth, trimStart or trimEnd are valid options',
+                      { itemIndex },
+                    );
                 }
                 break;
               case 'pad':
                 if (manipulation.targetLength == null || manipulation.targetLength < 0)
-                  throw new Error('The Target Length has to be set to at least 0 or higher!');
+                  throw new NodeOperationError(
+                    this.getNode(),
+                    'The Target Length has to be set to at least 0 or higher!',
+                    { itemIndex },
+                  );
                 switch (manipulation.pad) {
                   case 'padStart':
                     text = text.padStart(
@@ -1280,7 +1153,11 @@ export class TextManipulation implements INodeType {
                     );
                     break;
                   default:
-                    throw new Error('padStart or padEnd are valid options');
+                    throw new NodeOperationError(
+                      this.getNode(),
+                      'padStart or padEnd are valid options',
+                      { itemIndex },
+                    );
                 }
                 break;
               case 'substring':
@@ -1296,7 +1173,11 @@ export class TextManipulation implements INodeType {
                     break;
                   case 'length':
                     if (manipulation.endLength == null || manipulation.endLength < 0) {
-                      throw new Error('The Length has to be set to at least 0 or higher!');
+                      throw new NodeOperationError(
+                        this.getNode(),
+                        'The Length has to be set to at least 0 or higher!',
+                        { itemIndex },
+                      );
                     }
                     if ((manipulation.startPosition || 0) < 0)
                       text = text.substring(
@@ -1312,23 +1193,33 @@ export class TextManipulation implements INodeType {
                       );
                     break;
                   default:
-                    throw new Error('complete, position or length are valid options');
+                    throw new NodeOperationError(
+                      this.getNode(),
+                      'complete, position or length are valid options',
+                      { itemIndex },
+                    );
                 }
                 break;
               case 'repeat':
                 if (manipulation.times == null || manipulation.times < 0)
-                  throw new Error('The Times has to be set to at least 0 or higher!');
+                  throw new NodeOperationError(
+                    this.getNode(),
+                    'The Times has to be set to at least 0 or higher!',
+                    { itemIndex },
+                  );
                 text = text.repeat(manipulation.times as number);
                 break;
               default:
-                throw new Error(
+                throw new NodeOperationError(
+                  this.getNode(),
                   'decodeEncode, replace, trim, pad, substring or repeat are valid options',
+                  { itemIndex },
                 );
             }
           }
           switch (dataSource.writeOperation) {
             case 'toFile':
-              newItemBinary![dataSource.destinationBinaryPropertyName as string] =
+              newItemBinary[dataSource.destinationBinaryPropertyName as string] =
                 await this.helpers.prepareBinaryData(
                   iconv.encode(text, dataSource.fileEncodeWith as string, {
                     addBOM: dataSource.fileAddBOM as boolean,
@@ -1341,7 +1232,9 @@ export class TextManipulation implements INodeType {
               set(newItemJson, dataSource.destinationKey as string, text);
               break;
             default:
-              throw new Error('toFile or toJSON are valid options');
+              throw new NodeOperationError(this.getNode(), 'toFile or toJSON are valid options', {
+                itemIndex,
+              });
           }
         }
       }
