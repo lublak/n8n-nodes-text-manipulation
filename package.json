@@ -10,6 +10,7 @@
     "lint": "eslint nodes credentials package.json --no-error-on-unmatched-pattern",
     "lint:fix": "eslint nodes credentials package.json --no-error-on-unmatched-pattern --fix",
     "build": "tsc && gulp build:icons",
+		"prepare": "npm run build",
     "dev": "tsc --watch",
     "format": "prettier nodes credentials --write"
   },
