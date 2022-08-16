@@ -172,6 +172,12 @@ export class TextManipulation implements INodeType {
                         name: 'fileAddBOM',
                         type: 'boolean',
                         default: false,
+                        displayOptions: {
+                          show: {
+                            writeOperation: ['toFile'],
+                            fileEncodeWith: bomAware,
+                          },
+                        },
                       },
                       {
                         displayName: 'Binary Property',
@@ -181,12 +187,23 @@ export class TextManipulation implements INodeType {
                         default: 'data',
                         description:
                           'Name of the binary property from which the binary data is to be read',
+                        displayOptions: {
+                          show: {
+                            readOperation: ['fromFile'],
+                          },
+                        },
                       },
                       {
                         displayName: 'Decode With',
                         name: 'fileDecodeWith',
                         type: 'options',
-                        default: '',
+                        options: encodeDecodeOptions,
+                        default: 'utf8',
+                        displayOptions: {
+                          show: {
+                            readOperation: ['fromFile'],
+                          },
+                        },
                       },
                       {
                         displayName: 'Destination Binary Property',
@@ -196,6 +213,11 @@ export class TextManipulation implements INodeType {
                         default: 'data',
                         description:
                           'Name of the binary property where the binary data should be written',
+                        displayOptions: {
+                          show: {
+                            writeOperation: ['toFile'],
+                          },
+                        },
                       },
                       {
                         displayName: 'Destination Key',
@@ -205,13 +227,24 @@ export class TextManipulation implements INodeType {
                         required: true,
                         placeholder: 'data',
                         description:
-                          "The name the JSON key to copy data to. It is also possible&lt;br	/&gt;to define deep keys by using dot-notation like for example:&lt;br	/&gt;'level1.level2.newKey'.",
+                          "The name the JSON key to copy data to. It is also possible&lt;br\t/&gt;to define deep keys by using dot-notation like for example:&lt;br\t/&gt;'level1.level2.newKey'.",
+                        displayOptions: {
+                          show: {
+                            writeOperation: ['toJSON'],
+                          },
+                        },
                       },
                       {
                         displayName: 'Encode With',
                         name: 'fileEncodeWith',
                         type: 'options',
-                        default: '',
+                        options: encodeDecodeOptions,
+                        default: 'utf8',
+                        displayOptions: {
+                          show: {
+                            writeOperation: ['toFile'],
+                          },
+                        },
                       },
                       {
                         displayName: 'File Name',
@@ -220,6 +253,11 @@ export class TextManipulation implements INodeType {
                         default: '',
                         placeholder: 'example.txt',
                         description: 'The file name to set',
+                        displayOptions: {
+                          show: {
+                            writeOperation: ['toFile'],
+                          },
+                        },
                       },
                       {
                         displayName: 'Get Manipulated Data',
@@ -229,6 +267,11 @@ export class TextManipulation implements INodeType {
                         default: false,
                         description:
                           'Whether to use the newly manipulated data instead of the raw data. If none are available, raw data is used.',
+                        displayOptions: {
+                          show: {
+                            readOperation: ['fromFile', 'fromJSON'],
+                          },
+                        },
                       },
                       {
                         displayName: 'Mime Type',
@@ -238,6 +281,11 @@ export class TextManipulation implements INodeType {
                         placeholder: 'text/plain',
                         description:
                           'The mime-type to set. By default will the mime-type for plan text be set.',
+                        displayOptions: {
+                          show: {
+                            writeOperation: ['toFile'],
+                          },
+                        },
                       },
                       {
                         displayName: 'Read Operation',
@@ -270,6 +318,11 @@ export class TextManipulation implements INodeType {
                         default: true,
                         description:
                           'Whether to skip non-string data. If they are not skipped, they are automatically converted to a string.',
+                        displayOptions: {
+                          show: {
+                            readOperation: ['fromJSON'],
+                          },
+                        },
                       },
                       {
                         displayName: 'Source Key',
@@ -278,13 +331,24 @@ export class TextManipulation implements INodeType {
                         type: 'string',
                         default: 'data',
                         description:
-                          "The name of the JSON key to get data from.&lt;br	/&gt;It is also possible to define deep keys by using dot-notation like for example:&lt;br	/&gt;'level1.level2.currentKey'",
+                          "The name of the JSON key to get data from.&lt;br\t/&gt;It is also possible to define deep keys by using dot-notation like for example:&lt;br\t/&gt;'level1.level2.currentKey'",
+                        displayOptions: {
+                          show: {
+                            readOperation: ['fromJSON'],
+                          },
+                        },
                       },
                       {
                         displayName: 'Strip BOM',
                         name: 'fileStripBOM',
                         type: 'boolean',
                         default: true,
+                        displayOptions: {
+                          show: {
+                            readOperation: ['fromFile'],
+                            fileDecodeWith: bomAware,
+                          },
+                        },
                       },
                       {
                         displayName: 'Text',
@@ -293,6 +357,11 @@ export class TextManipulation implements INodeType {
                         type: 'string',
                         default: '',
                         description: 'Plain text',
+                        displayOptions: {
+                          show: {
+                            readOperation: ['fromText'],
+                          },
+                        },
                       },
                       {
                         displayName: 'Write Operation',
@@ -352,7 +421,7 @@ export class TextManipulation implements INodeType {
                           {
                             name: 'Decode/Encode Entities',
                             value: 'decodeEncodeEntities',
-                            description: 'Decode and Encode HTML	&	XML entities',
+                            description: 'Decode and Encode HTML\t&\tXML entities',
                             action: 'Decode and encode html xml entities',
                           },
                           {
@@ -399,6 +468,12 @@ export class TextManipulation implements INodeType {
                         name: 'addBOM',
                         type: 'boolean',
                         default: false,
+                        displayOptions: {
+                          show: {
+                            action: ['decodeEncode'],
+                            encodeWith: bomAware,
+                          },
+                        },
                       },
                       {
                         displayName: 'After',
@@ -406,6 +481,11 @@ export class TextManipulation implements INodeType {
                         type: 'string',
                         default: '',
                         description: 'String to be added at the end',
+                        displayOptions: {
+                          show: {
+                            action: ['concat'],
+                          },
+                        },
                       },
                       {
                         displayName: 'Before',
@@ -413,6 +493,11 @@ export class TextManipulation implements INodeType {
                         type: 'string',
                         default: '',
                         description: 'String to be added at the beginning',
+                        displayOptions: {
+                          show: {
+                            action: ['concat'],
+                          },
+                        },
                       },
                       {
                         displayName: 'Case Type',
@@ -471,6 +556,11 @@ export class TextManipulation implements INodeType {
                           },
                         ],
                         default: 'lowerCase',
+                        displayOptions: {
+                          show: {
+                            action: ['letterCase'],
+                          },
+                        },
                       },
                       {
                         displayName: 'Decode Mode',
@@ -487,12 +577,24 @@ export class TextManipulation implements INodeType {
                           },
                         ],
                         default: 'legacy',
+                        displayOptions: {
+                          show: {
+                            action: ['decodeEncodeEntities'],
+                            decodeWithEntities: ['xml', 'html'],
+                          },
+                        },
                       },
                       {
                         displayName: 'Decode With',
                         name: 'decodeWith',
                         type: 'options',
-                        default: '',
+                        options: encodeDecodeOptions,
+                        default: 'utf8',
+                        displayOptions: {
+                          show: {
+                            action: ['decodeEncode'],
+                          },
+                        },
                       },
                       {
                         displayName: 'Decode With',
@@ -517,6 +619,11 @@ export class TextManipulation implements INodeType {
                           },
                         ],
                         default: 'nothing',
+                        displayOptions: {
+                          show: {
+                            action: ['decodeEncodeEntities'],
+                          },
+                        },
                       },
                       {
                         displayName: 'Encode Mode',
@@ -537,12 +644,24 @@ export class TextManipulation implements INodeType {
                           },
                         ],
                         default: 'extensive',
+                        displayOptions: {
+                          show: {
+                            action: ['decodeEncodeEntities'],
+                            encodeWithEntities: ['xml', 'html'],
+                          },
+                        },
                       },
                       {
                         displayName: 'Encode With',
                         name: 'encodeWith',
                         type: 'options',
-                        default: '',
+                        options: encodeDecodeOptions,
+                        default: 'utf8',
+                        displayOptions: {
+                          show: {
+                            action: ['decodeEncode'],
+                          },
+                        },
                       },
                       {
                         displayName: 'Encode With',
@@ -567,6 +686,11 @@ export class TextManipulation implements INodeType {
                           },
                         ],
                         default: 'nothing',
+                        displayOptions: {
+                          show: {
+                            action: ['decodeEncodeEntities'],
+                          },
+                        },
                       },
                       {
                         displayName: 'End',
@@ -592,6 +716,11 @@ export class TextManipulation implements INodeType {
                         ],
                         default: 'complete',
                         description: 'The end of the substring',
+                        displayOptions: {
+                          show: {
+                            action: ['substring'],
+                          },
+                        },
                       },
                       {
                         displayName: 'Language',
@@ -600,6 +729,12 @@ export class TextManipulation implements INodeType {
                         default: 'en',
                         required: true,
                         description: 'Change the language of the localbase method',
+                        displayOptions: {
+                          show: {
+                            action: ['letterCase'],
+                            caseType: ['localeLowerCase', 'localeUpperCase'],
+                          },
+                        },
                       },
                       {
                         displayName: 'Length',
@@ -608,6 +743,12 @@ export class TextManipulation implements INodeType {
                         default: 1,
                         placeholder: '1',
                         description: 'The length of the substring',
+                        displayOptions: {
+                          show: {
+                            action: ['substring'],
+                            end: ['length'],
+                          },
+                        },
                       },
                       {
                         displayName: 'Pad',
@@ -626,6 +767,11 @@ export class TextManipulation implements INodeType {
                           },
                         ],
                         default: 'padStart',
+                        displayOptions: {
+                          show: {
+                            action: ['pad'],
+                          },
+                        },
                       },
                       {
                         displayName: 'Pad String',
@@ -634,6 +780,11 @@ export class TextManipulation implements INodeType {
                         default: ' ',
                         required: true,
                         description: 'The filling string',
+                        displayOptions: {
+                          show: {
+                            action: ['pad'],
+                          },
+                        },
                       },
                       {
                         displayName: 'Pattern',
@@ -643,6 +794,12 @@ export class TextManipulation implements INodeType {
                         placeholder: '$&',
                         description:
                           '&lt;table&gt;&lt;tr&gt;&lt;th&gt;Pattern&lt;/th&gt;&lt;th&gt;Inserts&lt;/th&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;$$&lt;/td&gt;&lt;td&gt;Inserts a "$".&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;$&&lt;/td&gt;&lt;td&gt;Inserts the matched substring.&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;$`&lt;/td&gt;&lt;td&gt;Inserts the portion of the string that precedes the matched substring.&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;$\'&lt;/td&gt;&lt;td&gt;Inserts the portion of the string that follows the matched substring.&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;$n&lt;/td&gt;&lt;td&gt;Where n is a positive integer less than 100, inserts the nth parenthesized submatch string, provided the first argument was a RegExp object. Note that this is 1-indexed. If a group n is not present (e.g., if group is 3), it will be replaced as a literal (e.g., $3).&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;$&lt;Name&gt;&lt;/td&gt;&lt;td&gt;Where Name is a capturing group name. If the group is not in the match, or not in the regular expression, or if a string was passed as the first argument to replace instead of a regular expression, this resolves to a literal (e.g., $&lt;Name&gt;).&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;',
+                        displayOptions: {
+                          show: {
+                            action: ['replace'],
+                            replaceMode: ['regex'],
+                          },
+                        },
                       },
                       {
                         displayName: 'Position',
@@ -651,6 +808,12 @@ export class TextManipulation implements INodeType {
                         default: 1,
                         placeholder: '1',
                         description: 'The end position of the substring. Can also be negative.',
+                        displayOptions: {
+                          show: {
+                            action: ['substring'],
+                            end: ['position'],
+                          },
+                        },
                       },
                       {
                         displayName: 'Regex',
@@ -660,6 +823,12 @@ export class TextManipulation implements INodeType {
                         required: true,
                         placeholder: '.*',
                         description: 'Regular expression',
+                        displayOptions: {
+                          show: {
+                            action: ['replace'],
+                            replaceMode: ['regex'],
+                          },
+                        },
                       },
                       {
                         displayName: 'Replace All',
@@ -669,6 +838,12 @@ export class TextManipulation implements INodeType {
                         placeholder: '',
                         description:
                           'Whether all substrings should be replaced (not only the first)',
+                        displayOptions: {
+                          show: {
+                            action: ['replace'],
+                            replaceMode: ['substring'],
+                          },
+                        },
                       },
                       {
                         displayName: 'Replace Mode',
@@ -687,6 +862,11 @@ export class TextManipulation implements INodeType {
                           },
                         ],
                         default: 'substring',
+                        displayOptions: {
+                          show: {
+                            action: ['replace'],
+                          },
+                        },
                       },
                       {
                         displayName: 'Start Position',
@@ -696,12 +876,23 @@ export class TextManipulation implements INodeType {
                         placeholder: '0',
                         description:
                           'The start position (string begins with 0). Can also be negativ.',
+                        displayOptions: {
+                          show: {
+                            action: ['substring'],
+                          },
+                        },
                       },
                       {
                         displayName: 'Strip BOM',
                         name: 'stripBOM',
                         type: 'boolean',
                         default: true,
+                        displayOptions: {
+                          show: {
+                            action: ['decodeEncode'],
+                            decodeWith: bomAware,
+                          },
+                        },
                       },
                       {
                         displayName: 'Substring',
@@ -711,6 +902,12 @@ export class TextManipulation implements INodeType {
                         required: true,
                         placeholder: '.*',
                         description: 'The substring to be replaced',
+                        displayOptions: {
+                          show: {
+                            action: ['replace'],
+                            replaceMode: ['substring'],
+                          },
+                        },
                       },
                       {
                         displayName: 'Target Length',
@@ -720,6 +917,11 @@ export class TextManipulation implements INodeType {
                         required: true,
                         placeholder: '1',
                         description: 'The length to which the string should be padded',
+                        displayOptions: {
+                          show: {
+                            action: ['pad'],
+                          },
+                        },
                       },
                       {
                         displayName: 'Times',
@@ -729,6 +931,11 @@ export class TextManipulation implements INodeType {
                         required: true,
                         placeholder: '1',
                         description: 'The number of times the string should be repeated',
+                        displayOptions: {
+                          show: {
+                            action: ['repeat'],
+                          },
+                        },
                       },
                       {
                         displayName: 'Trim',
@@ -752,6 +959,11 @@ export class TextManipulation implements INodeType {
                           },
                         ],
                         default: 'trimBoth',
+                        displayOptions: {
+                          show: {
+                            action: ['trim'],
+                          },
+                        },
                       },
                       {
                         displayName: 'Trim String',
@@ -760,6 +972,11 @@ export class TextManipulation implements INodeType {
                         default: ' ',
                         required: true,
                         description: 'The string to trim',
+                        displayOptions: {
+                          show: {
+                            action: ['trim'],
+                          },
+                        },
                       },
                       {
                         displayName: 'Trim String as an Unit',
@@ -769,6 +986,11 @@ export class TextManipulation implements INodeType {
                         required: true,
                         description:
                           'Whether to use the trim chain as a whole unit and not each individual character in that chain',
+                        displayOptions: {
+                          show: {
+                            action: ['trim'],
+                          },
+                        },
                       },
                       {
                         displayName: 'Value',
@@ -777,6 +999,12 @@ export class TextManipulation implements INodeType {
                         default: '',
                         placeholder: '',
                         description: 'The value that should replace the substring',
+                        displayOptions: {
+                          show: {
+                            action: ['replace'],
+                            replaceMode: ['substring'],
+                          },
+                        },
                       },
                     ],
                   },
