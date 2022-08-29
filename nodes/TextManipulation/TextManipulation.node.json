@@ -1,5 +1,5 @@
 {
-  "node": "n8n-nodes-base.textManipulation",
+  "node": "n8n-nodes-text-manipulation.textManipulation",
   "nodeVersion": "1.0",
   "codexVersion": "1.0",
   "categories": ["Utility"],
