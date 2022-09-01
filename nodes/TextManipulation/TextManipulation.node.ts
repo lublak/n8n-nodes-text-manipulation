@@ -110,14 +110,18 @@ function charsTrim(str: string, chars: string) {
 }
 
 /**
- * Escaped characters are unescaped
- * @param {string} str - The string for which the escaped characters should be unescaped
+ * Escaped characters are unescaped.
+ *
+ * @param   {string} str - The string for which the escaped characters should be unescaped.
+ * @returns {string}     — Returns string with unescaped escaped characters.
  */
 function unescapeEscapedCharacters(str: string) {
-  const escapeCharacters:{[escaped:string]:string;} = {
+  /*eslint-disable */
+  const escapeCharacters: Record<string, string> = {
+    
     '\\0': '\0',
-    "\\'": "\'",
-    '\\"': '\"',
+    "\\'": "'",
+    '\\"': '"',
     '\\\\': '\\',
     '\\n': '\n',
     '\\r': '\r',
@@ -125,10 +129,17 @@ function unescapeEscapedCharacters(str: string) {
     '\\t': '\t',
     '\\b': '\b',
     '\\f': '\f',
-  }
-  const regex = new RegExp(Object.keys(escapeCharacters).join('|') + '','g')
-  return str
-    .replace(/(\\0|\\'|\\"|\\\\|\\n|\\r|\\v|\\t|\\b|\\f)|\\u([\da-f]{4})|\\x([\da-f]{2})|\\u{(0*(?:10|[\da-f])?[\da-f]{1,4})}/gi, (_, m0, m1 , m2, m3) => m0 ? escapeCharacters[m0] : String.fromCharCode(parseInt(m1??m2??m3, 16)));
+    
+  };
+  /*eslint-enable */
+
+  return str.replace(
+    /(\\0|\\'|\\"|\\\\|\\n|\\r|\\v|\\t|\\b|\\f)|\\u([\da-f]{4})|\\x([\da-f]{2})|\\u{(0*(?:10|[\da-f])?[\da-f]{1,4})}/gi,
+    (_, m0, m1, m2, m3) =>
+      m0
+        ? escapeCharacters[m0 as string]
+        : String.fromCharCode(parseInt((m1 ?? m2 ?? m3) as string, 16)),
+  );
 }
 
 /**
@@ -756,9 +767,10 @@ export class TextManipulation implements INodeType {
                             description: 'Replace a substring with a value',
                           },
                           {
-                            name: 'Extended substring',
+                            name: 'Extended Substring',
                             value: 'extendedSubstring',
-                            description: 'Replace a substring including escape characters with a value',
+                            description:
+                              'Replace a substring including escape characters with a value',
                           },
                           {
                             name: 'Regex',
@@ -1345,12 +1357,16 @@ export class TextManipulation implements INodeType {
                       text = replaceAll(
                         text,
                         manipulation.substring as string,
-                        manipulation.extended ? unescapeEscapedCharacters(manipulation.value as string) : manipulation.value as string,
+                        manipulation.extended
+                          ? unescapeEscapedCharacters(manipulation.value as string)
+                          : (manipulation.value as string),
                       );
                     } else {
                       text = text.replace(
                         manipulation.substring as string,
-                        manipulation.extended ? unescapeEscapedCharacters(manipulation.value as string) : manipulation.value as string,
+                        manipulation.extended
+                          ? unescapeEscapedCharacters(manipulation.value as string)
+                          : (manipulation.value as string),
                       );
                     }
                     break;
@@ -1359,12 +1375,16 @@ export class TextManipulation implements INodeType {
                       text = replaceAll(
                         text,
                         unescapeEscapedCharacters(manipulation.substring as string),
-                        manipulation.extended ? unescapeEscapedCharacters(manipulation.value as string) : manipulation.value as string,
+                        manipulation.extended
+                          ? unescapeEscapedCharacters(manipulation.value as string)
+                          : (manipulation.value as string),
                       );
                     } else {
                       text = text.replace(
                         unescapeEscapedCharacters(manipulation.substring as string),
-                        manipulation.extended ? unescapeEscapedCharacters(manipulation.value as string) : manipulation.value as string,
+                        manipulation.extended
+                          ? unescapeEscapedCharacters(manipulation.value as string)
+                          : (manipulation.value as string),
                       );
                     }
                     break;
@@ -1376,17 +1396,23 @@ export class TextManipulation implements INodeType {
                     if (!regexMatch) {
                       text = text.replace(
                         new RegExp(manipulation.regex as string),
-                        manipulation.extended ? unescapeEscapedCharacters(manipulation.pattern as string) : manipulation.pattern as string,
+                        manipulation.extended
+                          ? unescapeEscapedCharacters(manipulation.pattern as string)
+                          : (manipulation.pattern as string),
                       );
                     } else if (regexMatch.length === 1) {
                       text = text.replace(
                         new RegExp(regexMatch[1]),
-                        manipulation.extended ? unescapeEscapedCharacters(manipulation.pattern as string) : manipulation.pattern as string,
+                        manipulation.extended
+                          ? unescapeEscapedCharacters(manipulation.pattern as string)
+                          : (manipulation.pattern as string),
                       );
                     } else {
                       text = text.replace(
                         new RegExp(regexMatch[1], regexMatch[2]),
-                        manipulation.extended ? unescapeEscapedCharacters(manipulation.pattern as string) : manipulation.pattern as string,
+                        manipulation.extended
+                          ? unescapeEscapedCharacters(manipulation.pattern as string)
+                          : (manipulation.pattern as string),
                       );
                     }
                     break;
