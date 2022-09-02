@@ -829,13 +829,13 @@ export class TextManipulation implements INodeType {
                         displayOptions: {
                           show: {
                             action: ['replace'],
-                            replaceMode: ['substring'],
+                            replaceMode: ['substring', 'extendedSubstring'],
                           },
                         },
                         type: 'string',
                         default: '',
                         required: true,
-                        placeholder: '.*',
+                        placeholder: 'sub',
                         description: 'The substring to be replaced',
                       },
                       {
@@ -844,7 +844,7 @@ export class TextManipulation implements INodeType {
                         displayOptions: {
                           show: {
                             action: ['replace'],
-                            replaceMode: ['substring'],
+                            replaceMode: ['substring', 'extendedSubstring'],
                           },
                         },
                         type: 'string',
@@ -858,7 +858,7 @@ export class TextManipulation implements INodeType {
                         displayOptions: {
                           show: {
                             action: ['replace'],
-                            replaceMode: ['substring'],
+                            replaceMode: ['substring', 'extendedSubstring'],
                           },
                         },
                         type: 'boolean',
@@ -876,7 +876,7 @@ export class TextManipulation implements INodeType {
                           },
                         },
                         type: 'boolean',
-                        default: true,
+                        default: false,
                         placeholder: '',
                         description:
                           'Whether all escape characters should be used for replacement (\\n, \\r, \\t, ...)',
