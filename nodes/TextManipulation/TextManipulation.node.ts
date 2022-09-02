@@ -134,13 +134,24 @@ function unescapeEscapedCharacters(str: string) {
   /*eslint-enable */
 
   return str.replace(
-    /(\\0|\\'|\\"|\\n|\\r|\\v|\\t|\\b|\\f)|\\u([\da-f]{4})|\\x([\da-f]{2})|\\u{(0*(?:10|[\da-f])?[\da-f]{1,4})}|\\(.)/gi,
-    (_, m0, m1, m2, m3, m4) =>
-      m0
-        ? escapeCharacters[m0 as string]
-        : m4
-        ? (m4 as string)
-        : String.fromCharCode(parseInt((m1 ?? m2 ?? m3) as string, 16)),
+    /(\\0|\\'|\\"|\\n|\\r|\\v|\\t|\\b|\\f)|\\u([\da-fA-F]{4})|\\x([\da-fA-F]{2})|\\u{(0*(?:10|[\da-fA-F])?[\da-fA-F]{1,4})}|\\(.)/g,
+    (
+      _,
+      escapeCharacter,
+      unicodeCharacter,
+      unicodeShortCharacter,
+      unicodeBracesCharacter,
+      anyCharacter,
+    ) => {
+      if (escapeCharacter) return escapeCharacters[escapeCharacter as string];
+      if (anyCharacter) return anyCharacter as string;
+      return String.fromCharCode(
+        parseInt(
+          (unicodeCharacter ?? unicodeShortCharacter ?? unicodeBracesCharacter) as string,
+          16,
+        ),
+      );
+    },
   );
 }
 
