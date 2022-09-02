@@ -57,8 +57,12 @@ Features:
 - Replace
 	- Substring
 		- All
-	- Regex
+		- Extended
+	- Extended Substring
 		- All
+		- Extended
+	- Regex
+		- Extended
 - Trim
 	- Left
 		- as an unit
