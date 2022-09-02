@@ -110,6 +110,52 @@ function charsTrim(str: string, chars: string) {
 }
 
 /**
+ * Escaped characters are unescaped.
+ *
+ * @param   {string} str - The string for which the escaped characters should be unescaped.
+ * @returns {string}     — Returns string with unescaped escaped characters.
+ */
+function unescapeEscapedCharacters(str: string) {
+  /*eslint-disable */
+  const escapeCharacters: Record<string, string> = {
+    
+    '\\0': '\0',
+    "\\'": "'",
+    '\\"': '"',
+    '\\\\': '\\',
+    '\\n': '\n',
+    '\\r': '\r',
+    '\\v': '\v',
+    '\\t': '\t',
+    '\\b': '\b',
+    '\\f': '\f',
+    
+  };
+  /*eslint-enable */
+
+  return str.replace(
+    /(\\0|\\'|\\"|\\n|\\r|\\v|\\t|\\b|\\f)|\\u([\da-fA-F]{4})|\\x([\da-fA-F]{2})|\\u{(0*(?:10|[\da-fA-F])?[\da-fA-F]{1,4})}|\\(.)/g,
+    (
+      _,
+      escapeCharacter,
+      unicodeCharacter,
+      unicodeShortCharacter,
+      unicodeBracesCharacter,
+      anyCharacter,
+    ) => {
+      if (escapeCharacter) return escapeCharacters[escapeCharacter as string];
+      if (anyCharacter) return anyCharacter as string;
+      return String.fromCharCode(
+        parseInt(
+          (unicodeCharacter ?? unicodeShortCharacter ?? unicodeBracesCharacter) as string,
+          16,
+        ),
+      );
+    },
+  );
+}
+
+/**
  * A node which allows you to manipulate string values.
  */
 export class TextManipulation implements INodeType {
@@ -734,6 +780,12 @@ export class TextManipulation implements INodeType {
                             description: 'Replace a substring with a value',
                           },
                           {
+                            name: 'Extended Substring',
+                            value: 'extendedSubstring',
+                            description:
+                              'Replace a substring including escape characters with a value',
+                          },
+                          {
                             name: 'Regex',
                             value: 'regex',
                             description: 'Replace regex with a pattern',
@@ -777,13 +829,13 @@ export class TextManipulation implements INodeType {
                         displayOptions: {
                           show: {
                             action: ['replace'],
-                            replaceMode: ['substring'],
+                            replaceMode: ['substring', 'extendedSubstring'],
                           },
                         },
                         type: 'string',
                         default: '',
                         required: true,
-                        placeholder: '.*',
+                        placeholder: 'sub',
                         description: 'The substring to be replaced',
                       },
                       {
@@ -792,7 +844,7 @@ export class TextManipulation implements INodeType {
                         displayOptions: {
                           show: {
                             action: ['replace'],
-                            replaceMode: ['substring'],
+                            replaceMode: ['substring', 'extendedSubstring'],
                           },
                         },
                         type: 'string',
@@ -806,7 +858,7 @@ export class TextManipulation implements INodeType {
                         displayOptions: {
                           show: {
                             action: ['replace'],
-                            replaceMode: ['substring'],
+                            replaceMode: ['substring', 'extendedSubstring'],
                           },
                         },
                         type: 'boolean',
@@ -814,6 +866,20 @@ export class TextManipulation implements INodeType {
                         placeholder: '',
                         description:
                           'Whether all substrings should be replaced (not only the first)',
+                      },
+                      {
+                        displayName: 'Extended',
+                        name: 'extended',
+                        displayOptions: {
+                          show: {
+                            action: ['replace'],
+                          },
+                        },
+                        type: 'boolean',
+                        default: false,
+                        placeholder: '',
+                        description:
+                          'Whether all escape characters should be used for replacement (\\n, \\r, \\t, ...)',
                       },
                       {
                         displayName: 'Trim',
@@ -1304,12 +1370,34 @@ export class TextManipulation implements INodeType {
                       text = replaceAll(
                         text,
                         manipulation.substring as string,
-                        manipulation.value as string,
+                        manipulation.extended
+                          ? unescapeEscapedCharacters(manipulation.value as string)
+                          : (manipulation.value as string),
                       );
                     } else {
                       text = text.replace(
                         manipulation.substring as string,
-                        manipulation.value as string,
+                        manipulation.extended
+                          ? unescapeEscapedCharacters(manipulation.value as string)
+                          : (manipulation.value as string),
+                      );
+                    }
+                    break;
+                  case 'extendedSubstring':
+                    if (manipulation.replaceAll) {
+                      text = replaceAll(
+                        text,
+                        unescapeEscapedCharacters(manipulation.substring as string),
+                        manipulation.extended
+                          ? unescapeEscapedCharacters(manipulation.value as string)
+                          : (manipulation.value as string),
+                      );
+                    } else {
+                      text = text.replace(
+                        unescapeEscapedCharacters(manipulation.substring as string),
+                        manipulation.extended
+                          ? unescapeEscapedCharacters(manipulation.value as string)
+                          : (manipulation.value as string),
                       );
                     }
                     break;
@@ -1321,17 +1409,23 @@ export class TextManipulation implements INodeType {
                     if (!regexMatch) {
                       text = text.replace(
                         new RegExp(manipulation.regex as string),
-                        manipulation.pattern as string,
+                        manipulation.extended
+                          ? unescapeEscapedCharacters(manipulation.pattern as string)
+                          : (manipulation.pattern as string),
                       );
                     } else if (regexMatch.length === 1) {
                       text = text.replace(
                         new RegExp(regexMatch[1]),
-                        manipulation.pattern as string,
+                        manipulation.extended
+                          ? unescapeEscapedCharacters(manipulation.pattern as string)
+                          : (manipulation.pattern as string),
                       );
                     } else {
                       text = text.replace(
                         new RegExp(regexMatch[1], regexMatch[2]),
-                        manipulation.pattern as string,
+                        manipulation.extended
+                          ? unescapeEscapedCharacters(manipulation.pattern as string)
+                          : (manipulation.pattern as string),
                       );
                     }
                     break;
