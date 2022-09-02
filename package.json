@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-text-manipulation",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "This node allows to modify texts.",
   "keywords": [
     "n8n-community-node-package"
