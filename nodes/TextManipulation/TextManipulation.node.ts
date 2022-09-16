@@ -118,7 +118,7 @@ function charsTrim(str: string, chars: string) {
 function unescapeEscapedCharacters(str: string) {
   /*eslint-disable */
   const escapeCharacters: Record<string, string> = {
-    
+
     '\\0': '\0',
     "\\'": "'",
     '\\"': '"',
@@ -129,7 +129,7 @@ function unescapeEscapedCharacters(str: string) {
     '\\t': '\t',
     '\\b': '\b',
     '\\f': '\f',
-    
+
   };
   /*eslint-enable */
 
@@ -494,6 +494,13 @@ export class TextManipulation implements INodeType {
                             description: 'Replace a substring or regex',
                             action: 'Replace a substring or regex',
                           },
+                          {
+                            name: 'Strip',
+                            value: 'strip',
+                            description: 'Remove tags from a string',
+                            action: 'Remove tags from a string',
+                          },
+
                           {
                             name: 'Substring',
                             value: 'substring',
@@ -1081,6 +1088,29 @@ export class TextManipulation implements INodeType {
                         placeholder: '1',
                         description: 'The number of times the string should be repeated',
                       },
+                      {
+                        displayName: 'String Type',
+                        name: 'stringType',
+                        displayOptions: {
+                          show: {
+                            action: ['strip'],
+                          },
+                        },
+                        type: 'options',
+                        options: [
+                          {
+                            name: 'HTML',
+                            value: 'html',
+                            description: 'Strip HTML tags of a string',
+                          },
+                          {
+                            name: 'XML',
+                            value: 'xml',
+                            description: 'Strip XML tags of a string',
+                          },
+                        ],
+                        default: 'html',
+                      },
                     ],
                   },
                 ],
@@ -1436,6 +1466,22 @@ export class TextManipulation implements INodeType {
                       'substring or regex are valid options',
                       { itemIndex },
                     );
+                }
+                break;
+              case 'strip':
+                switch (manipulation.stringType) {
+                  case 'html': {
+                    text = text.replace(new RegExp(/<[^>]*>?/gm), '');
+                    break;
+                  }
+                  case 'xml': {
+                    text = text.replace(new RegExp(/<[^>]*>?/gm), '');
+                    break;
+                  }
+                  default:
+                    throw new NodeOperationError(this.getNode(), 'html or xml are valid options', {
+                      itemIndex,
+                    });
                 }
                 break;
               case 'trim':
