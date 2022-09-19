@@ -118,7 +118,6 @@ function charsTrim(str: string, chars: string) {
 function unescapeEscapedCharacters(str: string) {
   /*eslint-disable */
   const escapeCharacters: Record<string, string> = {
-    
     '\\0': '\0',
     "\\'": "'",
     '\\"': '"',
@@ -129,7 +128,6 @@ function unescapeEscapedCharacters(str: string) {
     '\\t': '\t',
     '\\b': '\b',
     '\\f': '\f',
-    
   };
   /*eslint-enable */
 
@@ -790,6 +788,11 @@ export class TextManipulation implements INodeType {
                             value: 'regex',
                             description: 'Replace regex with a pattern',
                           },
+                          {
+                            name: 'Predefined Rule',
+                            value: 'predefinedRule',
+                            description: 'Use a predefined rule to replace',
+                          },
                         ],
                         default: 'substring',
                       },
@@ -824,6 +827,25 @@ export class TextManipulation implements INodeType {
                           '&lt;table&gt;&lt;tr&gt;&lt;th&gt;Pattern&lt;/th&gt;&lt;th&gt;Inserts&lt;/th&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;$$&lt;/td&gt;&lt;td&gt;Inserts a "$".&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;$&&lt;/td&gt;&lt;td&gt;Inserts the matched substring.&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;$`&lt;/td&gt;&lt;td&gt;Inserts the portion of the string that precedes the matched substring.&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;$\'&lt;/td&gt;&lt;td&gt;Inserts the portion of the string that follows the matched substring.&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;$n&lt;/td&gt;&lt;td&gt;Where n is a positive integer less than 100, inserts the nth parenthesized submatch string, provided the first argument was a RegExp object. Note that this is 1-indexed. If a group n is not present (e.g., if group is 3), it will be replaced as a literal (e.g., $3).&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;$&lt;Name&gt;&lt;/td&gt;&lt;td&gt;Where Name is a capturing group name. If the group is not in the match, or not in the regular expression, or if a string was passed as the first argument to replace instead of a regular expression, this resolves to a literal (e.g., $&lt;Name&gt;).&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;',
                       },
                       {
+                        displayName: 'Predefined Rule',
+                        name: 'predefinedRule',
+                        displayOptions: {
+                          show: {
+                            action: ['replace'],
+                            replaceMode: ['predefinedRule'],
+                          },
+                        },
+                        type: 'options',
+                        options: [
+                          {
+                            name: 'Tags',
+                            value: 'tags',
+                            description: 'Replace a tags',
+                          },
+                        ],
+                        default: 'tags',
+                      },
+                      {
                         displayName: 'Substring',
                         name: 'substring',
                         displayOptions: {
@@ -844,7 +866,7 @@ export class TextManipulation implements INodeType {
                         displayOptions: {
                           show: {
                             action: ['replace'],
-                            replaceMode: ['substring', 'extendedSubstring'],
+                            replaceMode: ['substring', 'extendedSubstring', 'predefinedRule'],
                           },
                         },
                         type: 'string',
@@ -1430,10 +1452,32 @@ export class TextManipulation implements INodeType {
                     }
                     break;
                   }
+                  case 'predefinedRule':
+                    switch (manipulation.predefinedRule) {
+                      case 'tags':
+                        if (manipulation.extended)
+                          text = text.replace(
+                            new RegExp(/<[^>]*>?/gm),
+                            unescapeEscapedCharacters(manipulation.value as string),
+                          );
+                        else
+                          text = text.replace(
+                            new RegExp(/<[^>]*>?/gm),
+                            manipulation.value as string,
+                          );
+                        break;
+                      default:
+                        throw new NodeOperationError(
+                          this.getNode(),
+                          'tags (more comming soon) are valid options',
+                          { itemIndex },
+                        );
+                    }
+                    break;
                   default:
                     throw new NodeOperationError(
                       this.getNode(),
-                      'substring or regex are valid options',
+                      'substring, extendedSubstring, regex or predefinedRule are valid options',
                       { itemIndex },
                     );
                 }
