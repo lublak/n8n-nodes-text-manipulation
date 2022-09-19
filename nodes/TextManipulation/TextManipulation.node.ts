@@ -1453,17 +1453,27 @@ export class TextManipulation implements INodeType {
                     break;
                   }
                   case 'predefinedRule':
-                    switch(manipulation.predefinedRule) {
+                    switch (manipulation.predefinedRule) {
                       case 'tags':
-                        if(manipulation.extended) text = text.replace(new RegExp(/<[^>]*>?/gm), unescapeEscapedCharacters(manipulation.value as string));
-                        else text = text.replace(new RegExp(/<[^>]*>?/gm), manipulation.value as string);
-                      default: 
+                        if (manipulation.extended)
+                          text = text.replace(
+                            new RegExp(/<[^>]*>?/gm),
+                            unescapeEscapedCharacters(manipulation.value as string),
+                          );
+                        else
+                          text = text.replace(
+                            new RegExp(/<[^>]*>?/gm),
+                            manipulation.value as string,
+                          );
+                        break;
+                      default:
                         throw new NodeOperationError(
                           this.getNode(),
                           'tags (more comming soon) are valid options',
                           { itemIndex },
                         );
                     }
+                    break;
                   default:
                     throw new NodeOperationError(
                       this.getNode(),
