@@ -12,7 +12,7 @@ import {
   trim,
   trimEnd,
   trimStart,
-} from 'lodash';
+} from 'lodash-es';
 import { BINARY_ENCODING, IExecuteFunctions } from 'n8n-core';
 import {
   IBinaryData,
@@ -25,6 +25,8 @@ import {
   INodeTypeDescription,
   NodeOperationError,
 } from 'n8n-workflow';
+// eslint-disable-next-line import/no-unresolved
+import { stripHtml } from 'string-strip-html';
 
 iconv.encodingExists('utf8');
 
@@ -166,7 +168,6 @@ export class TextManipulation implements INodeType {
     description: 'Allows you to manipulate string values.',
     defaults: {
       name: 'TextManipulation',
-      color: '#772244',
     },
     inputs: ['main'],
     outputs: ['main'],
@@ -196,8 +197,8 @@ export class TextManipulation implements INodeType {
             displayName: 'Texts with Manipulations',
             values: [
               {
-                name: 'dataSources',
                 displayName: 'Data Sources',
+                name: 'dataSources',
                 placeholder: 'Add Data Source',
                 type: 'fixedCollection',
                 typeOptions: {
@@ -208,8 +209,8 @@ export class TextManipulation implements INodeType {
                 default: {},
                 options: [
                   {
-                    name: 'dataSource',
                     displayName: 'Data Source',
+                    name: 'dataSource',
                     values: [
                       {
                         displayName: 'Read Operation',
@@ -840,10 +841,23 @@ export class TextManipulation implements INodeType {
                           {
                             name: 'Tags',
                             value: 'tags',
-                            description: 'Replace a tags',
+                            description: 'Replace all tags',
                           },
                         ],
                         default: 'tags',
+                      },
+                      {
+                        displayName: 'Only Recognised HTML',
+                        name: 'onlyRecognisedHTML',
+                        displayOptions: {
+                          show: {
+                            action: ['replace'],
+                            replaceMode: ['predefinedRule'],
+                            predefinedRule: ['tags'],
+                          },
+                        },
+                        type: 'boolean',
+                        default: false,
                       },
                       {
                         displayName: 'Substring',
@@ -1454,18 +1468,32 @@ export class TextManipulation implements INodeType {
                   }
                   case 'predefinedRule':
                     switch (manipulation.predefinedRule) {
-                      case 'tags':
-                        if (manipulation.extended)
-                          text = text.replace(
-                            new RegExp(/<[^>]*>?/gm),
-                            unescapeEscapedCharacters(manipulation.value as string),
-                          );
-                        else
-                          text = text.replace(
-                            new RegExp(/<[^>]*>?/gm),
-                            manipulation.value as string,
-                          );
+                      case 'tags': {
+                        const value = manipulation.extended
+                          ? unescapeEscapedCharacters(manipulation.value as string)
+                          : (manipulation.value as string);
+                        text = stripHtml(text, {
+                          stripRecognisedHTMLOnly: manipulation.onlyRecognisedHTML as boolean,
+                          skipHtmlDecoding: true,
+                          cb: (obj) => {
+                            if (obj.deleteFrom && obj.deleteTo) {
+                              if (obj.tag.slashPresent)
+                                obj.rangesArr.push(
+                                  obj.deleteFrom,
+                                  obj.deleteTo,
+                                  `${value}${obj.insert ?? ''}`,
+                                );
+                              else
+                                obj.rangesArr.push(
+                                  obj.deleteFrom,
+                                  obj.deleteTo,
+                                  `${value}${obj.insert ?? ''}`,
+                                );
+                            } else obj.rangesArr.push(obj.proposedReturn);
+                          },
+                        }).result;
                         break;
+                      }
                       default:
                         throw new NodeOperationError(
                           this.getNode(),
