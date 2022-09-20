@@ -77,7 +77,7 @@ function replaceAll(str: string, substr: string, newSubstr: string) {
  *
  * @param   {string} str   - The string to trim.
  * @param   {string} chars - The characters to trim as a unit.
- * @returns {string}       — Returns the trimmed string.
+ * @returns {string}       - Returns the trimmed string.
  */
 function charsTrimStart(str: string, chars: string) {
   if (chars === ' ') return str.trimStart();
@@ -90,7 +90,7 @@ function charsTrimStart(str: string, chars: string) {
  *
  * @param   {string} str   - The string to trim.
  * @param   {string} chars - The characters to trim as a unit.
- * @returns {string}       — Returns the trimmed string.
+ * @returns {string}       - Returns the trimmed string.
  */
 function charsTrimEnd(str: string, chars: string) {
   if (chars === ' ') return str.trimEnd();
@@ -103,7 +103,7 @@ function charsTrimEnd(str: string, chars: string) {
  *
  * @param   {string} str   - The string to trim.
  * @param   {string} chars - The characters to trim as a unit.
- * @returns {string}       — Returns the trimmed string.
+ * @returns {string}       - Returns the trimmed string.
  */
 function charsTrim(str: string, chars: string) {
   if (chars === ' ') return str.trim();
@@ -115,7 +115,7 @@ function charsTrim(str: string, chars: string) {
  * Escaped characters are unescaped.
  *
  * @param   {string} str - The string for which the escaped characters should be unescaped.
- * @returns {string}     — Returns string with unescaped escaped characters.
+ * @returns {string}     - Returns string with unescaped escaped characters.
  */
 function unescapeEscapedCharacters(str: string) {
   /*eslint-disable */
@@ -153,6 +153,30 @@ function unescapeEscapedCharacters(str: string) {
       );
     },
   );
+}
+
+/**
+ * Builds a regex string from a regex string with min and max count.
+ *
+ * @param   {string} base    - The regex string.
+ * @param   {number} [min=0] - The minimum number of regex strings. Default is `0`
+ * @param   {number} [max=0] - The maximum number of regex strings. Default is `0`
+ * @returns {string}         - The new regex string with min and max.
+ */
+function buildRegexGroup(base: string, min = 0, max = 0): string {
+  if (min) {
+    if (max) {
+      return base;
+    } else {
+      return `${base}{${min},}`;
+    }
+  } else if (max) {
+    return `${base}{,${max}}`;
+  } else if (min === max) {
+    return `${base}{${max}}`;
+  } else {
+    return `${base}{${min},${max}}`;
+  }
 }
 
 /**
@@ -843,6 +867,11 @@ export class TextManipulation implements INodeType {
                             value: 'tags',
                             description: 'Replace all tags',
                           },
+                          {
+                            name: 'Character Groups',
+                            value: 'characterGroups',
+                            description: 'Replace all defined character groups',
+                          },
                         ],
                         default: 'tags',
                       },
@@ -854,6 +883,171 @@ export class TextManipulation implements INodeType {
                             action: ['replace'],
                             replaceMode: ['predefinedRule'],
                             predefinedRule: ['tags'],
+                          },
+                        },
+                        type: 'boolean',
+                        default: false,
+                      },
+                      {
+                        displayName: 'Newline',
+                        name: 'newline',
+                        displayOptions: {
+                          show: {
+                            action: ['replace'],
+                            replaceMode: ['predefinedRule'],
+                            predefinedRule: ['characterGroups'],
+                          },
+                        },
+                        type: 'boolean',
+                        default: false,
+                      },
+                      {
+                        displayName: 'Newline Min',
+                        name: 'newlineMin',
+                        displayOptions: {
+                          show: {
+                            action: ['replace'],
+                            replaceMode: ['predefinedRule'],
+                            predefinedRule: ['characterGroups'],
+                            newline: [true],
+                          },
+                        },
+                        type: 'boolean',
+                        default: false,
+                      },
+                      {
+                        displayName: 'Newline Max',
+                        name: 'newlineMax',
+                        displayOptions: {
+                          show: {
+                            action: ['replace'],
+                            replaceMode: ['predefinedRule'],
+                            predefinedRule: ['characterGroups'],
+                            newline: [true],
+                          },
+                        },
+                        type: 'boolean',
+                        default: false,
+                      },
+                      {
+                        displayName: 'Number',
+                        name: 'number',
+                        displayOptions: {
+                          show: {
+                            action: ['replace'],
+                            replaceMode: ['predefinedRule'],
+                            predefinedRule: ['characterGroups'],
+                          },
+                        },
+                        type: 'boolean',
+                        default: false,
+                      },
+                      {
+                        displayName: 'Number Min',
+                        name: 'numberMin',
+                        displayOptions: {
+                          show: {
+                            action: ['replace'],
+                            replaceMode: ['predefinedRule'],
+                            predefinedRule: ['characterGroups'],
+                            number: [true],
+                          },
+                        },
+                        type: 'boolean',
+                        default: false,
+                      },
+                      {
+                        displayName: 'Number Max',
+                        name: 'numberMax',
+                        displayOptions: {
+                          show: {
+                            action: ['replace'],
+                            replaceMode: ['predefinedRule'],
+                            predefinedRule: ['characterGroups'],
+                            number: [true],
+                          },
+                        },
+                        type: 'boolean',
+                        default: false,
+                      },
+                      {
+                        displayName: 'Alpha',
+                        name: 'alpha',
+                        displayOptions: {
+                          show: {
+                            action: ['replace'],
+                            replaceMode: ['predefinedRule'],
+                            predefinedRule: ['characterGroups'],
+                            alpha: [true],
+                          },
+                        },
+                        type: 'boolean',
+                        default: false,
+                      },
+                      {
+                        displayName: 'Alpha Min',
+                        name: 'alphaMin',
+                        displayOptions: {
+                          show: {
+                            action: ['replace'],
+                            replaceMode: ['predefinedRule'],
+                            predefinedRule: ['characterGroups'],
+                            alpha: [true],
+                          },
+                        },
+                        type: 'boolean',
+                        default: false,
+                      },
+                      {
+                        displayName: 'Alpha Max',
+                        name: 'alphaMax',
+                        displayOptions: {
+                          show: {
+                            action: ['replace'],
+                            replaceMode: ['predefinedRule'],
+                            predefinedRule: ['characterGroups'],
+                            alpha: [true],
+                          },
+                        },
+                        type: 'boolean',
+                        default: false,
+                      },
+                      {
+                        displayName: 'Whitespace',
+                        name: 'whitespace',
+                        displayOptions: {
+                          show: {
+                            action: ['replace'],
+                            replaceMode: ['predefinedRule'],
+                            predefinedRule: ['characterGroups'],
+                          },
+                        },
+                        type: 'boolean',
+                        default: false,
+                      },
+                      {
+                        displayName: 'Whitespace Min',
+                        name: 'whitespaceMin',
+                        displayOptions: {
+                          show: {
+                            action: ['replace'],
+                            replaceMode: ['predefinedRule'],
+                            predefinedRule: ['characterGroups'],
+                            whitespace: [true],
+                          },
+                        },
+                        type: 'boolean',
+                        default: false,
+                      },
+                      {
+                        displayName: 'Whitespace Max',
+                        name: 'whitespaceMax',
+                        displayOptions: {
+                          show: {
+                            action: ['replace'],
+                            replaceMode: ['predefinedRule'],
+                            predefinedRule: ['characterGroups'],
+                            whitespace: [true],
                           },
                         },
                         type: 'boolean',
@@ -1494,10 +1688,52 @@ export class TextManipulation implements INodeType {
                         }).result;
                         break;
                       }
+                      case 'characterGroups': {
+                        const groups = [];
+                        if (manipulation.newline)
+                          groups.push(
+                            buildRegexGroup(
+                              '(\\r\\n|\\r|\\n)',
+                              manipulation.newlineMin as number,
+                              manipulation.newlineMax as number,
+                            ),
+                          );
+                        if (manipulation.number)
+                          groups.push(
+                            buildRegexGroup(
+                              '\\d',
+                              manipulation.numberMin as number,
+                              manipulation.numberMax as number,
+                            ),
+                          );
+                        if (manipulation.alpha)
+                          groups.push(
+                            buildRegexGroup(
+                              '[a-zA-Z]',
+                              manipulation.alphaMin as number,
+                              manipulation.alphaMax as number,
+                            ),
+                          );
+                        if (manipulation.whitespace)
+                          groups.push(
+                            buildRegexGroup(
+                              '\\s',
+                              manipulation.whitespaceMin as number,
+                              manipulation.whitespaceMax as number,
+                            ),
+                          );
+                        text = text.replace(
+                          new RegExp(groups.join('|'), 'g'),
+                          manipulation.extended
+                            ? unescapeEscapedCharacters(manipulation.value as string)
+                            : (manipulation.value as string),
+                        );
+                        break;
+                      }
                       default:
                         throw new NodeOperationError(
                           this.getNode(),
-                          'tags (more comming soon) are valid options',
+                          'tags or characterGroups are valid options',
                           { itemIndex },
                         );
                     }
