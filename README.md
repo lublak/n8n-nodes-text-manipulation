@@ -63,6 +63,22 @@ Features:
 		- Extended
 	- Regex
 		- Extended
+	- Predefined Rule
+		- Tags
+			- Only Recognised HTML
+		- Character Groups
+			- Newline
+				- Newline Min
+				- Newline Max
+			- Number
+				- Number Min
+				- Number Max
+			- Alpha
+				- Alpha Min
+				- Alpha Max
+			- Whitespace
+				- Whitespace Min
+				- Whitespace Mac
 - Trim
 	- Left
 		- as an unit
