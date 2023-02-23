@@ -1224,7 +1224,7 @@ export class TextManipulation implements INodeType {
                 break;
               case 'decodeEncodeEntities':
                 if (manipulation.encodeWithEntities !== manipulation.decodeWithEntities) {
-                  switch (manipulation.decodeWithEntitie) {
+                  switch (manipulation.decodeWithEntities) {
                     case 'url':
                       text = decodeURI(text);
                       break;
