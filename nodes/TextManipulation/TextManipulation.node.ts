@@ -12,7 +12,7 @@ import {
   trim,
   trimEnd,
   trimStart,
-} from 'lodash';
+} from 'lodash-es';
 import { BINARY_ENCODING, IExecuteFunctions } from 'n8n-core';
 import {
   IBinaryData,
@@ -25,6 +25,8 @@ import {
   INodeTypeDescription,
   NodeOperationError,
 } from 'n8n-workflow';
+// eslint-disable-next-line import/no-unresolved
+import { stripHtml } from 'string-strip-html';
 
 iconv.encodingExists('utf8');
 
@@ -75,7 +77,7 @@ function replaceAll(str: string, substr: string, newSubstr: string) {
  *
  * @param   {string} str   - The string to trim.
  * @param   {string} chars - The characters to trim as a unit.
- * @returns {string}       — Returns the trimmed string.
+ * @returns {string}       - Returns the trimmed string.
  */
 function charsTrimStart(str: string, chars: string) {
   if (chars === ' ') return str.trimStart();
@@ -88,7 +90,7 @@ function charsTrimStart(str: string, chars: string) {
  *
  * @param   {string} str   - The string to trim.
  * @param   {string} chars - The characters to trim as a unit.
- * @returns {string}       — Returns the trimmed string.
+ * @returns {string}       - Returns the trimmed string.
  */
 function charsTrimEnd(str: string, chars: string) {
   if (chars === ' ') return str.trimEnd();
@@ -101,7 +103,7 @@ function charsTrimEnd(str: string, chars: string) {
  *
  * @param   {string} str   - The string to trim.
  * @param   {string} chars - The characters to trim as a unit.
- * @returns {string}       — Returns the trimmed string.
+ * @returns {string}       - Returns the trimmed string.
  */
 function charsTrim(str: string, chars: string) {
   if (chars === ' ') return str.trim();
@@ -113,12 +115,11 @@ function charsTrim(str: string, chars: string) {
  * Escaped characters are unescaped.
  *
  * @param   {string} str - The string for which the escaped characters should be unescaped.
- * @returns {string}     — Returns string with unescaped escaped characters.
+ * @returns {string}     - Returns string with unescaped escaped characters.
  */
 function unescapeEscapedCharacters(str: string) {
   /*eslint-disable */
   const escapeCharacters: Record<string, string> = {
-    
     '\\0': '\0',
     "\\'": "'",
     '\\"': '"',
@@ -129,7 +130,6 @@ function unescapeEscapedCharacters(str: string) {
     '\\t': '\t',
     '\\b': '\b',
     '\\f': '\f',
-    
   };
   /*eslint-enable */
 
@@ -156,6 +156,30 @@ function unescapeEscapedCharacters(str: string) {
 }
 
 /**
+ * Builds a regex string from a regex string with min and max count.
+ *
+ * @param   {string} base    - The regex string.
+ * @param   {number} [min=0] - The minimum number of regex strings. Default is `0`
+ * @param   {number} [max=0] - The maximum number of regex strings. Default is `0`
+ * @returns {string}         - The new regex string with min and max.
+ */
+function buildRegexGroup(base: string, min = 0, max = 0): string {
+  if (min) {
+    if (max) {
+      return base;
+    } else {
+      return `${base}{${min},}`;
+    }
+  } else if (max) {
+    return `${base}{,${max}}`;
+  } else if (min === max) {
+    return `${base}{${max}}`;
+  } else {
+    return `${base}{${min},${max}}`;
+  }
+}
+
+/**
  * A node which allows you to manipulate string values.
  */
 export class TextManipulation implements INodeType {
@@ -168,7 +192,6 @@ export class TextManipulation implements INodeType {
     description: 'Allows you to manipulate string values.',
     defaults: {
       name: 'TextManipulation',
-      color: '#772244',
     },
     inputs: ['main'],
     outputs: ['main'],
@@ -198,8 +221,8 @@ export class TextManipulation implements INodeType {
             displayName: 'Texts with Manipulations',
             values: [
               {
-                name: 'dataSources',
                 displayName: 'Data Sources',
+                name: 'dataSources',
                 placeholder: 'Add Data Source',
                 type: 'fixedCollection',
                 typeOptions: {
@@ -210,8 +233,8 @@ export class TextManipulation implements INodeType {
                 default: {},
                 options: [
                   {
-                    name: 'dataSource',
                     displayName: 'Data Source',
+                    name: 'dataSource',
                     values: [
                       {
                         displayName: 'Read Operation',
@@ -790,6 +813,11 @@ export class TextManipulation implements INodeType {
                             value: 'regex',
                             description: 'Replace regex with a pattern',
                           },
+                          {
+                            name: 'Predefined Rule',
+                            value: 'predefinedRule',
+                            description: 'Use a predefined rule to replace',
+                          },
                         ],
                         default: 'substring',
                       },
@@ -824,6 +852,208 @@ export class TextManipulation implements INodeType {
                           '&lt;table&gt;&lt;tr&gt;&lt;th&gt;Pattern&lt;/th&gt;&lt;th&gt;Inserts&lt;/th&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;$$&lt;/td&gt;&lt;td&gt;Inserts a "$".&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;$&&lt;/td&gt;&lt;td&gt;Inserts the matched substring.&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;$`&lt;/td&gt;&lt;td&gt;Inserts the portion of the string that precedes the matched substring.&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;$\'&lt;/td&gt;&lt;td&gt;Inserts the portion of the string that follows the matched substring.&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;$n&lt;/td&gt;&lt;td&gt;Where n is a positive integer less than 100, inserts the nth parenthesized submatch string, provided the first argument was a RegExp object. Note that this is 1-indexed. If a group n is not present (e.g., if group is 3), it will be replaced as a literal (e.g., $3).&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;$&lt;Name&gt;&lt;/td&gt;&lt;td&gt;Where Name is a capturing group name. If the group is not in the match, or not in the regular expression, or if a string was passed as the first argument to replace instead of a regular expression, this resolves to a literal (e.g., $&lt;Name&gt;).&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;',
                       },
                       {
+                        displayName: 'Predefined Rule',
+                        name: 'predefinedRule',
+                        displayOptions: {
+                          show: {
+                            action: ['replace'],
+                            replaceMode: ['predefinedRule'],
+                          },
+                        },
+                        type: 'options',
+                        options: [
+                          {
+                            name: 'Tags',
+                            value: 'tags',
+                            description: 'Replace all tags',
+                          },
+                          {
+                            name: 'Character Groups',
+                            value: 'characterGroups',
+                            description: 'Replace all defined character groups',
+                          },
+                        ],
+                        default: 'tags',
+                      },
+                      {
+                        displayName: 'Only Recognised HTML',
+                        name: 'onlyRecognisedHTML',
+                        displayOptions: {
+                          show: {
+                            action: ['replace'],
+                            replaceMode: ['predefinedRule'],
+                            predefinedRule: ['tags'],
+                          },
+                        },
+                        type: 'boolean',
+                        default: false,
+                      },
+                      {
+                        displayName: 'Newline',
+                        name: 'newline',
+                        displayOptions: {
+                          show: {
+                            action: ['replace'],
+                            replaceMode: ['predefinedRule'],
+                            predefinedRule: ['characterGroups'],
+                          },
+                        },
+                        type: 'boolean',
+                        default: false,
+                      },
+                      {
+                        displayName: 'Newline Min',
+                        name: 'newlineMin',
+                        displayOptions: {
+                          show: {
+                            action: ['replace'],
+                            replaceMode: ['predefinedRule'],
+                            predefinedRule: ['characterGroups'],
+                            newline: [true],
+                          },
+                        },
+                        type: 'boolean',
+                        default: false,
+                      },
+                      {
+                        displayName: 'Newline Max',
+                        name: 'newlineMax',
+                        displayOptions: {
+                          show: {
+                            action: ['replace'],
+                            replaceMode: ['predefinedRule'],
+                            predefinedRule: ['characterGroups'],
+                            newline: [true],
+                          },
+                        },
+                        type: 'boolean',
+                        default: false,
+                      },
+                      {
+                        displayName: 'Number',
+                        name: 'number',
+                        displayOptions: {
+                          show: {
+                            action: ['replace'],
+                            replaceMode: ['predefinedRule'],
+                            predefinedRule: ['characterGroups'],
+                          },
+                        },
+                        type: 'boolean',
+                        default: false,
+                      },
+                      {
+                        displayName: 'Number Min',
+                        name: 'numberMin',
+                        displayOptions: {
+                          show: {
+                            action: ['replace'],
+                            replaceMode: ['predefinedRule'],
+                            predefinedRule: ['characterGroups'],
+                            number: [true],
+                          },
+                        },
+                        type: 'boolean',
+                        default: false,
+                      },
+                      {
+                        displayName: 'Number Max',
+                        name: 'numberMax',
+                        displayOptions: {
+                          show: {
+                            action: ['replace'],
+                            replaceMode: ['predefinedRule'],
+                            predefinedRule: ['characterGroups'],
+                            number: [true],
+                          },
+                        },
+                        type: 'boolean',
+                        default: false,
+                      },
+                      {
+                        displayName: 'Alpha',
+                        name: 'alpha',
+                        displayOptions: {
+                          show: {
+                            action: ['replace'],
+                            replaceMode: ['predefinedRule'],
+                            predefinedRule: ['characterGroups'],
+                            alpha: [true],
+                          },
+                        },
+                        type: 'boolean',
+                        default: false,
+                      },
+                      {
+                        displayName: 'Alpha Min',
+                        name: 'alphaMin',
+                        displayOptions: {
+                          show: {
+                            action: ['replace'],
+                            replaceMode: ['predefinedRule'],
+                            predefinedRule: ['characterGroups'],
+                            alpha: [true],
+                          },
+                        },
+                        type: 'boolean',
+                        default: false,
+                      },
+                      {
+                        displayName: 'Alpha Max',
+                        name: 'alphaMax',
+                        displayOptions: {
+                          show: {
+                            action: ['replace'],
+                            replaceMode: ['predefinedRule'],
+                            predefinedRule: ['characterGroups'],
+                            alpha: [true],
+                          },
+                        },
+                        type: 'boolean',
+                        default: false,
+                      },
+                      {
+                        displayName: 'Whitespace',
+                        name: 'whitespace',
+                        displayOptions: {
+                          show: {
+                            action: ['replace'],
+                            replaceMode: ['predefinedRule'],
+                            predefinedRule: ['characterGroups'],
+                          },
+                        },
+                        type: 'boolean',
+                        default: false,
+                      },
+                      {
+                        displayName: 'Whitespace Min',
+                        name: 'whitespaceMin',
+                        displayOptions: {
+                          show: {
+                            action: ['replace'],
+                            replaceMode: ['predefinedRule'],
+                            predefinedRule: ['characterGroups'],
+                            whitespace: [true],
+                          },
+                        },
+                        type: 'boolean',
+                        default: false,
+                      },
+                      {
+                        displayName: 'Whitespace Max',
+                        name: 'whitespaceMax',
+                        displayOptions: {
+                          show: {
+                            action: ['replace'],
+                            replaceMode: ['predefinedRule'],
+                            predefinedRule: ['characterGroups'],
+                            whitespace: [true],
+                          },
+                        },
+                        type: 'boolean',
+                        default: false,
+                      },
+                      {
                         displayName: 'Substring',
                         name: 'substring',
                         displayOptions: {
@@ -844,7 +1074,7 @@ export class TextManipulation implements INodeType {
                         displayOptions: {
                           show: {
                             action: ['replace'],
-                            replaceMode: ['substring', 'extendedSubstring'],
+                            replaceMode: ['substring', 'extendedSubstring', 'predefinedRule'],
                           },
                         },
                         type: 'string',
@@ -1430,10 +1660,88 @@ export class TextManipulation implements INodeType {
                     }
                     break;
                   }
+                  case 'predefinedRule':
+                    switch (manipulation.predefinedRule) {
+                      case 'tags': {
+                        const value = manipulation.extended
+                          ? unescapeEscapedCharacters(manipulation.value as string)
+                          : (manipulation.value as string);
+                        text = stripHtml(text, {
+                          stripRecognisedHTMLOnly: manipulation.onlyRecognisedHTML as boolean,
+                          skipHtmlDecoding: true,
+                          cb: (obj) => {
+                            if (obj.deleteFrom && obj.deleteTo) {
+                              if (obj.tag.slashPresent)
+                                obj.rangesArr.push(
+                                  obj.deleteFrom,
+                                  obj.deleteTo,
+                                  `${value}${obj.insert ?? ''}`,
+                                );
+                              else
+                                obj.rangesArr.push(
+                                  obj.deleteFrom,
+                                  obj.deleteTo,
+                                  `${value}${obj.insert ?? ''}`,
+                                );
+                            } else obj.rangesArr.push(obj.proposedReturn);
+                          },
+                        }).result;
+                        break;
+                      }
+                      case 'characterGroups': {
+                        const groups = [];
+                        if (manipulation.newline)
+                          groups.push(
+                            buildRegexGroup(
+                              '(\\r\\n|\\r|\\n)',
+                              manipulation.newlineMin as number,
+                              manipulation.newlineMax as number,
+                            ),
+                          );
+                        if (manipulation.number)
+                          groups.push(
+                            buildRegexGroup(
+                              '\\d',
+                              manipulation.numberMin as number,
+                              manipulation.numberMax as number,
+                            ),
+                          );
+                        if (manipulation.alpha)
+                          groups.push(
+                            buildRegexGroup(
+                              '[a-zA-Z]',
+                              manipulation.alphaMin as number,
+                              manipulation.alphaMax as number,
+                            ),
+                          );
+                        if (manipulation.whitespace)
+                          groups.push(
+                            buildRegexGroup(
+                              '\\s',
+                              manipulation.whitespaceMin as number,
+                              manipulation.whitespaceMax as number,
+                            ),
+                          );
+                        text = text.replace(
+                          new RegExp(groups.join('|'), 'g'),
+                          manipulation.extended
+                            ? unescapeEscapedCharacters(manipulation.value as string)
+                            : (manipulation.value as string),
+                        );
+                        break;
+                      }
+                      default:
+                        throw new NodeOperationError(
+                          this.getNode(),
+                          'tags or characterGroups are valid options',
+                          { itemIndex },
+                        );
+                    }
+                    break;
                   default:
                     throw new NodeOperationError(
                       this.getNode(),
-                      'substring or regex are valid options',
+                      'substring, extendedSubstring, regex or predefinedRule are valid options',
                       { itemIndex },
                     );
                 }
