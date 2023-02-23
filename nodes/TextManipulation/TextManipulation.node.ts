@@ -164,16 +164,14 @@ function unescapeEscapedCharacters(str: string) {
 function buildRegexGroup(base: string, min = 0, max = 0): string {
   if (min) {
     if (max) {
-      return base;
+      return `${base}{${min},${max}}`;
     } else {
       return `${base}{${min},}`;
     }
   } else if (max) {
-    return `${base}{,${max}}`;
-  } else if (min === max) {
     return `${base}{${max}}`;
   } else {
-    return `${base}{${min},${max}}`;
+    return `${base}*`;
   }
 }
 
@@ -977,7 +975,6 @@ export class TextManipulation implements INodeType {
                             action: ['replace'],
                             replaceMode: ['predefinedRule'],
                             predefinedRule: ['characterGroups'],
-                            alpha: [true],
                           },
                         },
                         type: 'boolean',
@@ -1665,6 +1662,7 @@ export class TextManipulation implements INodeType {
                         const value = manipulation.extended
                           ? unescapeEscapedCharacters(manipulation.value as string)
                           : (manipulation.value as string);
+                        // eslint-disable-next-line import/no-unresolved
                         text = (await import('string-strip-html')).stripHtml(text, {
                           stripRecognisedHTMLOnly: manipulation.onlyRecognisedHTML as boolean,
                           skipHtmlDecoding: true,
