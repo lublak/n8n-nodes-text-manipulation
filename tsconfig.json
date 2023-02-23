@@ -7,7 +7,7 @@
 		"types": [
 			"node"
 		],
-		"module": "commonjs",
+		"module": "node16",
 		"noImplicitAny": true,
 		"removeComments": true,
 		"strictNullChecks": true,

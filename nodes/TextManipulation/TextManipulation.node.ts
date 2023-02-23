@@ -12,7 +12,7 @@ import {
   trim,
   trimEnd,
   trimStart,
-} from 'lodash-es';
+} from 'lodash';
 import { BINARY_ENCODING, IExecuteFunctions } from 'n8n-core';
 import {
   IBinaryData,
@@ -25,8 +25,6 @@ import {
   INodeTypeDescription,
   NodeOperationError,
 } from 'n8n-workflow';
-// eslint-disable-next-line import/no-unresolved
-import { stripHtml } from 'string-strip-html';
 
 iconv.encodingExists('utf8');
 
@@ -1667,7 +1665,7 @@ export class TextManipulation implements INodeType {
                         const value = manipulation.extended
                           ? unescapeEscapedCharacters(manipulation.value as string)
                           : (manipulation.value as string);
-                        text = stripHtml(text, {
+                        text = (await import('string-strip-html')).stripHtml(text, {
                           stripRecognisedHTMLOnly: manipulation.onlyRecognisedHTML as boolean,
                           skipHtmlDecoding: true,
                           cb: (obj) => {

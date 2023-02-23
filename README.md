@@ -1,3 +1,7 @@
+<p align="center">
+  <img width="180" height="180" src="/assets/jsonata/icon.png">
+</p>
+
 # n8n-nodes-text-manipulation
 
 [![version](https://img.shields.io/npm/v/n8n-nodes-text-manipulation.svg)](https://www.npmjs.org/package/n8n-nodes-text-manipulation)
@@ -100,6 +104,10 @@ Features:
 
 ## Install
 
-n8n-nodes-text-manipulation
+![Settings Animation](/assets/install.gif)
 
-[`Documentation`](https://docs.n8n.io/integrations/community-nodes/installation/)
+1. Go to Settings (Cogwheel)
+2. Click on "Community Nodes"
+3. Enter "n8n-nodes-text-manipulation" into the text box
+4. Click on "I understand the risk ..."
+5. Click on "Install"
