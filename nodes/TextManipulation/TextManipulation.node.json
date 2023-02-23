@@ -1,6 +1,6 @@
 {
   "node": "n8n-nodes-text-manipulation.textManipulation",
-  "nodeVersion": "1.1",
+  "nodeVersion": "1.2",
   "codexVersion": "1.0",
   "categories": ["Utility"],
   "resources": {
