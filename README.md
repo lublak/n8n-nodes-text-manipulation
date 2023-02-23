@@ -1,5 +1,5 @@
 <p align="center">
-  <img width="180" height="180" src="/assets/jsonata/icon.png">
+  <img width="180" height="180" src="/assets/textManipulation/icon.png">
 </p>
 
 # n8n-nodes-text-manipulation
