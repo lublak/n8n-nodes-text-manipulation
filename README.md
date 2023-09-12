@@ -30,7 +30,8 @@ Features:
 	- see icon-v (utf8, base64, utf16, etc...)
 	- with strip/add BOM
 - Decode Entities
-	-	Url
+	- Url
+	- Url Component
 	- Xml
 		- Legacy
 		- Strict
@@ -38,7 +39,8 @@ Features:
 		- Legacy
 		- Strict
 - Encode Entities
-	-	Url
+	- Url
+	- Url Component
 	- Xml
 		- Extensive
 		- UTF8

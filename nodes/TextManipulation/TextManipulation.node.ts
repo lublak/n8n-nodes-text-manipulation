@@ -117,19 +117,19 @@ function charsTrim(str: string, chars: string) {
  */
 function unescapeEscapedCharacters(str: string) {
   /*eslint-disable */
-  const escapeCharacters: Record<string, string> = {
-    '\\0': '\0',
-    "\\'": "'",
-    '\\"': '"',
-    '\\\\': '\\',
-    '\\n': '\n',
-    '\\r': '\r',
-    '\\v': '\v',
-    '\\t': '\t',
-    '\\b': '\b',
-    '\\f': '\f',
-  };
-  /*eslint-enable */
+	const escapeCharacters: Record<string, string> = {
+		'\\0': '\0',
+		"\\'": "'",
+		'\\"': '"',
+		'\\\\': '\\',
+		'\\n': '\n',
+		'\\r': '\r',
+		'\\v': '\v',
+		'\\t': '\t',
+		'\\b': '\b',
+		'\\f': '\f',
+	};
+	/*eslint-enable */
 
   return str.replace(
     /(\\0|\\'|\\"|\\n|\\r|\\v|\\t|\\b|\\f)|\\u([\da-fA-F]{4})|\\x([\da-fA-F]{2})|\\u{(0*(?:10|[\da-fA-F])?[\da-fA-F]{1,4})}|\\(.)/g,
@@ -652,6 +652,10 @@ export class TextManipulation implements INodeType {
                         type: 'options',
                         options: [
                           {
+                            name: 'Html',
+                            value: 'html',
+                          },
+                          {
                             name: 'Nothing',
                             value: 'nothing',
                           },
@@ -660,12 +664,12 @@ export class TextManipulation implements INodeType {
                             value: 'url',
                           },
                           {
-                            name: 'Xml',
-                            value: 'xml',
+                            name: 'Url Component',
+                            value: 'urlComponent',
                           },
                           {
-                            name: 'Html',
-                            value: 'html',
+                            name: 'Xml',
+                            value: 'xml',
                           },
                         ],
                         default: 'nothing',
@@ -727,6 +731,10 @@ export class TextManipulation implements INodeType {
                         type: 'options',
                         options: [
                           {
+                            name: 'Html',
+                            value: 'html',
+                          },
+                          {
                             name: 'Nothing',
                             value: 'nothing',
                           },
@@ -735,12 +743,12 @@ export class TextManipulation implements INodeType {
                             value: 'url',
                           },
                           {
-                            name: 'Xml',
-                            value: 'xml',
+                            name: 'Url Component',
+                            value: 'urlComponent',
                           },
                           {
-                            name: 'Html',
-                            value: 'html',
+                            name: 'Xml',
+                            value: 'xml',
                           },
                         ],
                         default: 'nothing',
@@ -1454,6 +1462,9 @@ export class TextManipulation implements INodeType {
                     case 'url':
                       text = decodeURI(text);
                       break;
+                    case 'urlComponent':
+                      text = decodeURIComponent(text);
+                      break;
                     case 'xml':
                       switch (manipulation.entitiesDecodeMode) {
                         case 'legacy':
@@ -1499,6 +1510,9 @@ export class TextManipulation implements INodeType {
                   switch (manipulation.encodeWithEntities) {
                     case 'url':
                       text = encodeURI(text);
+                      break;
+                    case 'urlComponent':
+                      text = encodeURIComponent(text);
                       break;
                     case 'xml':
                       switch (manipulation.entitiesEncodeMode) {
@@ -1769,7 +1783,7 @@ export class TextManipulation implements INodeType {
                 }
                 break;
               case 'pad':
-                if (manipulation.targetLength == null || manipulation.targetLength < 0)
+                if (manipulation.targetLength == null || (manipulation.targetLength as number) < 0)
                   throw new NodeOperationError(
                     this.getNode(),
                     'The Target Length has to be set to at least 0 or higher!',
@@ -1808,14 +1822,14 @@ export class TextManipulation implements INodeType {
                     );
                     break;
                   case 'length':
-                    if (manipulation.endLength == null || manipulation.endLength < 0) {
+                    if (manipulation.endLength == null || (manipulation.endLength as number) < 0) {
                       throw new NodeOperationError(
                         this.getNode(),
                         'The Length has to be set to at least 0 or higher!',
                         { itemIndex },
                       );
                     }
-                    if ((manipulation.startPosition || 0) < 0)
+                    if (((manipulation.startPosition as number | null) || 0) < 0)
                       text = text.substring(
                         manipulation.startPosition as number,
                         text.length +
@@ -1837,7 +1851,7 @@ export class TextManipulation implements INodeType {
                 }
                 break;
               case 'repeat':
-                if (manipulation.times == null || manipulation.times < 0)
+                if (manipulation.times == null || (manipulation.times as number) < 0)
                   throw new NodeOperationError(
                     this.getNode(),
                     'The Times has to be set to at least 0 or higher!',
