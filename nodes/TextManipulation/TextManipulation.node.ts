@@ -547,7 +547,8 @@ export class TextManipulation implements INodeType {
                           {
                             name: 'NFC',
                             value: 'nfc',
-                            description: 'Canonical Decomposition, followed by Canonical Composition',
+                            description:
+                              'Canonical Decomposition, followed by Canonical Composition',
                           },
                           {
                             name: 'NFD',
@@ -557,7 +558,8 @@ export class TextManipulation implements INodeType {
                           {
                             name: 'NFKC',
                             value: 'nfkc',
-                            description: 'Compatibility Decomposition, followed by Canonical Composition',
+                            description:
+                              'Compatibility Decomposition, followed by Canonical Composition',
                           },
                           {
                             name: 'NFKD',
