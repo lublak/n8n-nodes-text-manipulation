@@ -496,6 +496,12 @@ export class TextManipulation implements INodeType {
                             action: 'Upper and lowercase letters in a string',
                           },
                           {
+                            name: 'Normalize',
+                            value: 'normalize',
+                            description: 'Normalize a string',
+                            action: 'Normalize a string',
+                          },
+                          {
                             name: 'Pad',
                             value: 'pad',
                             description: 'Pad the string at the beginning or end',
@@ -527,6 +533,39 @@ export class TextManipulation implements INodeType {
                           },
                         ],
                         default: 'letterCase',
+                      },
+                      {
+                        displayName: 'Normalize Form',
+                        name: 'normalizeForm',
+                        displayOptions: {
+                          show: {
+                            action: ['normalize'],
+                          },
+                        },
+                        type: 'options',
+                        options: [
+                          {
+                            name: 'NFC',
+                            value: 'nfc',
+                            description: 'Canonical Decomposition, followed by Canonical Composition',
+                          },
+                          {
+                            name: 'NFD',
+                            value: 'nfd',
+                            description: 'Canonical Decomposition',
+                          },
+                          {
+                            name: 'NFKC',
+                            value: 'nfkc',
+                            description: 'Compatibility Decomposition, followed by Canonical Composition',
+                          },
+                          {
+                            name: 'NFKD',
+                            value: 'nfkd',
+                            description: 'Compatibility Decomposition',
+                          },
+                        ],
+                        default: 'nfc',
                       },
                       {
                         displayName: 'Case Type',
@@ -1601,6 +1640,22 @@ export class TextManipulation implements INodeType {
                       'upperCase, lowerCase, capitalize, camelCase, kebabCase or snakeCase are valid options',
                       { itemIndex },
                     );
+                }
+                break;
+              case 'normalize':
+                switch (manipulation.normalizeForm) {
+                  case 'nfc':
+                    text = text.normalize('NFC');
+                    break;
+                  case 'nfd':
+                    text = text.normalize('NFD');
+                    break;
+                  case 'nfkc':
+                    text = text.normalize('NFKC');
+                    break;
+                  case 'nfkd':
+                    text = text.normalize('NFKD');
+                    break;
                 }
                 break;
               case 'replace':
