@@ -103,6 +103,7 @@ Features:
 		- Length
 - Repeat
 	- Times
+- Normalize
 
 ## Install
 
