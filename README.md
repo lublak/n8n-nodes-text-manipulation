@@ -1,5 +1,5 @@
 <p align="center">
-  <img width="180" height="180" src="/assets/textManipulation/icon.png">
+  <img width="180" height="180" src="/nodes/TextManipulation/TextManipulation.svg">
 </p>
 
 # n8n-nodes-text-manipulation
@@ -106,8 +106,6 @@ Features:
 - Normalize
 
 ## Install
-
-![Settings Animation](/assets/install.gif)
 
 1. Go to Settings (Cogwheel)
 2. Click on "Community Nodes"
