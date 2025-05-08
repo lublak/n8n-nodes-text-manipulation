@@ -117,7 +117,7 @@ function charsTrim(str: string, chars: string) {
  * @returns {string}     - Returns string with unescaped escaped characters.
  */
 function unescapeEscapedCharacters(str: string) {
-	/*eslint-disable */
+	 
 	const escapeCharacters: Record<string, string> = {
 		'\\0': '\0',
 		"\\'": "'",
@@ -130,7 +130,7 @@ function unescapeEscapedCharacters(str: string) {
 		'\\b': '\b',
 		'\\f': '\f',
 	};
-	/*eslint-enable */
+	 
 
 	return str.replace(
 		/(\\0|\\'|\\"|\\n|\\r|\\v|\\t|\\b|\\f)|\\u([\da-fA-F]{4})|\\x([\da-fA-F]{2})|\\u{(0*(?:10|[\da-fA-F])?[\da-fA-F]{1,4})}|\\(.)/g,
