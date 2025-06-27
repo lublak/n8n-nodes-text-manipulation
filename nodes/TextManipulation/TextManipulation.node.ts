@@ -1754,7 +1754,7 @@ export class TextManipulation implements INodeType {
 											}
 											case 'characterGroups': {
 												const groups = [];
-												if (manipulation.newline)
+												if (manipulation.newline) {
 													groups.push(
 														buildRegexGroup(
 															'(\\r\\n|\\r|\\n)',
@@ -1762,7 +1762,8 @@ export class TextManipulation implements INodeType {
 															manipulation.newlineMax as number,
 														),
 													);
-												if (manipulation.number)
+												}
+												if (manipulation.number) {
 													groups.push(
 														buildRegexGroup(
 															'\\d',
@@ -1770,7 +1771,8 @@ export class TextManipulation implements INodeType {
 															manipulation.numberMax as number,
 														),
 													);
-												if (manipulation.alpha)
+												}
+												if (manipulation.alpha) {
 													groups.push(
 														buildRegexGroup(
 															'[a-zA-Z]',
@@ -1778,7 +1780,8 @@ export class TextManipulation implements INodeType {
 															manipulation.alphaMax as number,
 														),
 													);
-												if (manipulation.whitespace)
+												}
+												if (manipulation.whitespace) {
 													groups.push(
 														buildRegexGroup(
 															'\\s',
@@ -1786,12 +1789,15 @@ export class TextManipulation implements INodeType {
 															manipulation.whitespaceMax as number,
 														),
 													);
+												}
+												if (groups.length > 0) {
 												text = text.replace(
 													new RegExp(groups.join('|'), 'g'),
 													manipulation.extended
 														? unescapeEscapedCharacters(manipulation.value as string)
 														: (manipulation.value as string),
 												);
+												}
 												break;
 											}
 											default:
