@@ -1,5 +1,5 @@
 module.exports = {
-    "plugins": ["prettier-plugin-jsdoc"],
+    "plugins": ["prettier-plugin-jsdoc", "prettier-plugin-organize-imports"],
 
     jsdocDescriptionWithDot: true,
     jsdocVerticalAlignment: true,

@@ -1,3 +1,11 @@
+import Autolinker, {
+	EmailMatch,
+	HashtagMatch,
+	Match,
+	MentionMatch,
+	PhoneMatch,
+	UrlMatch,
+} from 'autolinker';
 import * as entities from 'entities';
 import * as iconv from 'iconv-lite';
 import {
@@ -9,25 +17,29 @@ import {
 	set,
 	snakeCase,
 	startCase,
+	template,
 	trim,
 	trimEnd,
 	trimStart,
 } from 'lodash';
-import { BINARY_ENCODING, deepCopy, IExecuteFunctions, NodeConnectionType } from 'n8n-workflow';
 import {
+	BINARY_ENCODING,
+	deepCopy,
 	IBinaryData,
 	IBinaryKeyData,
 	IDataObject,
+	IExecuteFunctions,
 	INodeExecutionData,
 	INodeParameters,
 	INodePropertyOptions,
 	INodeType,
 	INodeTypeDescription,
+	NodeConnectionType,
 	NodeOperationError,
 } from 'n8n-workflow';
 import stringStripHtml from 'string-strip-html';
 
-iconv.encodingExists('utf8');
+iconv.encodingExists('utf8'); // preload all encodings
 
 // Create options for bomAware and encoding
 const bomAware: string[] = [];
@@ -117,7 +129,6 @@ function charsTrim(str: string, chars: string) {
  * @returns {string}     - Returns string with unescaped escaped characters.
  */
 function unescapeEscapedCharacters(str: string) {
-	 
 	const escapeCharacters: Record<string, string> = {
 		'\\0': '\0',
 		"\\'": "'",
@@ -130,7 +141,6 @@ function unescapeEscapedCharacters(str: string) {
 		'\\b': '\b',
 		'\\f': '\f',
 	};
-	 
 
 	return str.replace(
 		/(\\0|\\'|\\"|\\n|\\r|\\v|\\t|\\b|\\f)|\\u([\da-fA-F]{4})|\\x([\da-fA-F]{2})|\\u{(0*(?:10|[\da-fA-F])?[\da-fA-F]{1,4})}|\\(.)/g,
@@ -173,6 +183,84 @@ function buildRegexGroup(base: string, min = 0, max = 0): string {
 		return `${base}{${max}}`;
 	} else {
 		return `${base}*`;
+	}
+}
+
+/**
+ * Interpolate a string with key value. Syntax: $varname. Escape with backslash: $varname =>
+ * $varname. Only replaces with valid varname (key), otherwise it will be completly ignored.
+ *
+ * @param   {string}                 str - The string.
+ * @param   {Record<string, string>} obj - The key value mapping to interpolate with. Key can not
+ *   have a whitespace!
+ * @returns {string}                     - The interpolated string.
+ */
+function simpleInterpolate(str: string, obj: Record<string, string>): string {
+	return str.replace(/\\?\$([^\s]+)/g, (substring: string, varname: string): string => {
+		if (varname in obj) {
+			if (substring.startsWith('\\')) {
+				return substring.substring(1);
+			}
+			return obj[varname];
+		}
+		return substring;
+	});
+}
+
+function autolinkMatchGetData(match: Match): Record<string, string> {
+	switch (match.getType()) {
+		case 'email':
+			match = match as EmailMatch;
+			return {
+				'text': match.getAnchorText(),
+				'value': match.getEmail(),
+				'match': match.getMatchedText(),
+				'type': 'email',
+			};
+		case 'hashtag':
+			match = match as HashtagMatch;
+			return {
+				'text': match.getAnchorText(),
+				'value': match.getHashtag(),
+				'match': match.getMatchedText(),
+				'type': 'hashtag',
+			};
+		case 'mention':
+			match = match as MentionMatch;
+			return {
+				'text': match.getAnchorText(),
+				'value': match.getMention(),
+				'match': match.getMatchedText(),
+				'type': 'mention',
+			};
+		case 'phone':
+			match = match as PhoneMatch;
+			return {
+				'text': match.getAnchorText(),
+				'value': match.getPhoneNumber(),
+				'match': match.getMatchedText(),
+				'type': 'phone',
+			};
+		case 'url':
+			match = match as UrlMatch;
+			let type: string;
+			switch (match.getUrlMatchType()) {
+				case 'scheme':
+					type = 'scheme';
+					break;
+				case 'tld':
+					type = 'tld';
+					break;
+				case 'ipV4':
+					type = 'ipv4';
+					break;
+			}
+			return {
+				'text': match.getAnchorText(),
+				'value': match.getUrl(),
+				'match': match.getMatchedText(),
+				'type': type,
+			};
 	}
 }
 
@@ -917,6 +1005,11 @@ export class TextManipulation implements INodeType {
 														value: 'characterGroups',
 														description: 'Replace all defined character groups',
 													},
+													{
+														name: 'Links',
+														value: 'links',
+														description: 'Replace all links',
+													},
 												],
 												default: 'tags',
 											},
@@ -1098,6 +1191,49 @@ export class TextManipulation implements INodeType {
 												default: 1,
 											},
 											{
+												displayName: 'Match Types',
+												name: 'matchTypes',
+												displayOptions: {
+													show: {
+														action: ['replace'],
+														replaceMode: ['predefinedRule'],
+														predefinedRule: ['links'],
+													},
+												},
+												type: 'multiOptions',
+												options: [
+													{
+														name: 'Scheme:// URLs',
+														value: 'scheme',
+													},
+													{
+														name: 'TLD URLs',
+														value: 'tld',
+													},
+													{
+														name: 'IPv4 Addresses',
+														value: 'ipv4',
+													},
+													{
+														name: 'Email Addresses',
+														value: 'email',
+													},
+													{
+														name: 'Phone Numbers',
+														value: 'phone',
+													},
+													{
+														name: 'Mentions',
+														value: 'mention',
+													},
+													{
+														name: 'Hashtags',
+														value: 'hashtag',
+													},
+												],
+												default: ['scheme', 'tld', 'ipv4', 'email', 'phone', 'mention', 'hashtag'],
+											},
+											{
 												displayName: 'Substring',
 												name: 'substring',
 												displayOptions: {
@@ -1111,6 +1247,36 @@ export class TextManipulation implements INodeType {
 												required: true,
 												placeholder: 'sub',
 												description: 'The substring to be replaced',
+											},
+											{
+												displayName: 'Replace With',
+												name: 'replaceWith',
+												displayOptions: {
+													show: {
+														action: ['replace'],
+														replaceMode: ['predefinedRule'],
+														predefinedRule: ['tags', 'links'],
+													},
+												},
+												type: 'options',
+												options: [
+													{
+														name: 'Plain',
+														value: 'plain',
+														description: 'Just replace with plain string',
+													},
+													{
+														name: 'Simple',
+														value: 'simple',
+														description: 'Simple interpolate $varname with defined values',
+													},
+													{
+														name: 'Template',
+														value: 'template',
+														description: 'Use a compelexer template language, see lodash templates.',
+													},
+												],
+												default: 'plain',
 											},
 											{
 												displayName: 'Value',
@@ -1754,7 +1920,7 @@ export class TextManipulation implements INodeType {
 											}
 											case 'characterGroups': {
 												const groups = [];
-												if (manipulation.newline)
+												if (manipulation.newline) {
 													groups.push(
 														buildRegexGroup(
 															'(\\r\\n|\\r|\\n)',
@@ -1762,7 +1928,8 @@ export class TextManipulation implements INodeType {
 															manipulation.newlineMax as number,
 														),
 													);
-												if (manipulation.number)
+												}
+												if (manipulation.number) {
 													groups.push(
 														buildRegexGroup(
 															'\\d',
@@ -1770,7 +1937,8 @@ export class TextManipulation implements INodeType {
 															manipulation.numberMax as number,
 														),
 													);
-												if (manipulation.alpha)
+												}
+												if (manipulation.alpha) {
 													groups.push(
 														buildRegexGroup(
 															'[a-zA-Z]',
@@ -1778,7 +1946,8 @@ export class TextManipulation implements INodeType {
 															manipulation.alphaMax as number,
 														),
 													);
-												if (manipulation.whitespace)
+												}
+												if (manipulation.whitespace) {
 													groups.push(
 														buildRegexGroup(
 															'\\s',
@@ -1786,18 +1955,57 @@ export class TextManipulation implements INodeType {
 															manipulation.whitespaceMax as number,
 														),
 													);
+												}
+												if (groups.length > 0) {
 												text = text.replace(
 													new RegExp(groups.join('|'), 'g'),
 													manipulation.extended
 														? unescapeEscapedCharacters(manipulation.value as string)
 														: (manipulation.value as string),
 												);
+												}
+												break;
+											}
+											case 'links': {
+												const value = manipulation.extended
+													? unescapeEscapedCharacters(manipulation.value as string)
+													: (manipulation.value as string);
+												const replaceWith = manipulation.replaceWith;
+												const matchTypes = manipulation.matchTypes as string[];
+
+												text = Autolinker.link(text, {
+													email: matchTypes.includes('email'),
+													hashtag: matchTypes.includes('hashtag') ? 'youtube' : undefined, // just some default value, not really important
+													mention: matchTypes.includes('mention') ? 'youtube' : undefined, // just some default value, not really important
+													phone: matchTypes.includes('phone'),
+													urls: {
+														ipV4Matches: matchTypes.includes('ipv4'),
+														schemeMatches: matchTypes.includes('scheme'),
+														tldMatches: matchTypes.includes('tld'),
+													},
+													replaceFn: (match: Match) => {
+														switch (replaceWith) {
+															case 'plain':
+																return value;
+															case 'simple':
+																return simpleInterpolate(value, autolinkMatchGetData(match));
+															case 'template':
+																return template(value)(autolinkMatchGetData(match));
+											default:
+												throw new NodeOperationError(
+													this.getNode(),
+																	'plain, simple or template are valid options',
+													{ itemIndex },
+												);
+										}
+													},
+												});
 												break;
 											}
 											default:
 												throw new NodeOperationError(
 													this.getNode(),
-													'tags or characterGroups are valid options',
+													'tags, characterGroups or links are valid options',
 													{ itemIndex },
 												);
 										}
@@ -1946,7 +2154,7 @@ export class TextManipulation implements INodeType {
 				binary: Object.keys(newItemBinary).length === 0 ? undefined : newItemBinary,
 				pairedItem: {
 					item: itemIndex,
-				}
+				},
 			});
 		}
 

@@ -85,6 +85,14 @@ Features:
 			- Whitespace
 				- Whitespace Min
 				- Whitespace Mac
+		- Links
+			- Scheme
+			- Tld
+			- IPv4
+			- Email
+			- Phone Number
+			- Mention
+			- Hashtag
 - Trim
 	- Left
 		- as an unit

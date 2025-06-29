@@ -5,16 +5,39 @@
    viewBox="0 0 105.833 105.833"
    version="1.1"
    id="svg1"
+   sodipodi:docname="TextManipulation.svg"
+   inkscape:version="1.4.2 (ebf0e940d0, 2025-05-08)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
    xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="1.5414928"
+     inkscape:cx="159.2612"
+     inkscape:cy="186.18316"
+     inkscape:window-width="2048"
+     inkscape:window-height="1080"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg1" />
   <defs
      id="defs1" />
   <g
-     style="font-style:normal;font-weight:400;font-size:87.8478px;line-height:1.25;font-family:sans-serif;fill:#000;fill-opacity:1;stroke:none;stroke-width:2.1962"
-     id="g1">
+     style="font-style:normal;font-weight:400;font-size:87.8478px;line-height:1.25;font-family:sans-serif;fill:#000000;fill-opacity:1;stroke:none;stroke-width:4.93396;stroke-dasharray:none"
+     id="g1"
+     transform="matrix(1.5381818,0,0,1.5381818,-28.479466,-28.479466)">
     <path
-       d="M65.528 84.852H40.306v-6.52h8.364v-50.83h-8.364v-6.52h25.222v6.52h-8.365v50.83h8.365z"
-       style="stroke-width:2.645825;stroke:#ffffff;stroke-opacity:1;stroke-dasharray:none;paint-order:stroke fill markers"
+       d="M 65.528,84.852 H 40.306 v -6.52 h 8.364 v -50.83 h -8.364 v -6.52 h 25.222 v 6.52 h -8.365 v 50.83 h 8.365 z"
+       style="stroke:#ffffff;stroke-width:4.93396;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
        aria-label="I"
        id="path1" />
   </g>
